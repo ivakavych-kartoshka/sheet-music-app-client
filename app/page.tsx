@@ -45,6 +45,7 @@ export default function Home() {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
+    console.log("ENV:", process.env.NEXT_PUBLIC_API_URL);
     getSongs()
       .then((data: Song[]) => setSongs(Array.isArray(data) ? data : []))
       .finally(() => setLoading(false));
@@ -52,7 +53,7 @@ export default function Home() {
 
   const categories = useMemo(() => {
     const uniqueCategories = Array.from(
-      new Set(songs.map((song) => song.category?.trim() || "Uncategorized"))
+      new Set(songs.map((song) => song.category?.trim() || "Uncategorized")),
     ).sort((a, b) => a.localeCompare(b));
 
     return ["Tất cả", ...uniqueCategories];
@@ -73,7 +74,10 @@ export default function Home() {
     });
   }, [songs, keyword, selectedCategory]);
 
-  const totalPages = Math.max(1, Math.ceil(filteredSongs.length / ITEMS_PER_PAGE));
+  const totalPages = Math.max(
+    1,
+    Math.ceil(filteredSongs.length / ITEMS_PER_PAGE),
+  );
 
   const paginatedSongs = useMemo(() => {
     const startIndex = (currentPage - 1) * ITEMS_PER_PAGE;
@@ -219,7 +223,9 @@ export default function Home() {
                         setCurrentPage((prev) => prev - 1);
                       }
                     }}
-                    className={currentPage === 1 ? "pointer-events-none opacity-50" : ""}
+                    className={
+                      currentPage === 1 ? "pointer-events-none opacity-50" : ""
+                    }
                   />
                 </PaginationItem>
 
@@ -252,7 +258,11 @@ export default function Home() {
                         setCurrentPage((prev) => prev + 1);
                       }
                     }}
-                    className={currentPage === totalPages ? "pointer-events-none opacity-50" : ""}
+                    className={
+                      currentPage === totalPages
+                        ? "pointer-events-none opacity-50"
+                        : ""
+                    }
                   />
                 </PaginationItem>
               </PaginationContent>

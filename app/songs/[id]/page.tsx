@@ -33,6 +33,7 @@ type SongError = {
 };
 
 async function getSong(id: string): Promise<SongDetailData> {
+  console.log("ENV:", process.env.NEXT_PUBLIC_API_URL);
   const res = await axios.get(
     `https://sheet-music-app-npoe.onrender.com/songs/${id}`,
     { timeout: 10000 },
