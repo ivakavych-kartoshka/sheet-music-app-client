@@ -178,22 +178,34 @@ export default async function SongDetail({ params }: Props) {
                   </CardHeader>
 
                   <CardContent className="space-y-3">
-                    {section.lines.map((line, i) => (
-                      <div key={i} className="p-4 border rounded-xl">
-                        <div className="flex gap-2">
-                          <Music2 className="w-4 h-4 mt-1" />
-                          <p className="font-bold">
-                            {line.notes || "No notes"}
-                          </p>
-                        </div>
+                    {section.lines && section.lines.length > 0 ? (
+                      section.lines.map((line, i) => (
+                        <div
+                          key={i}
+                          className="p-4 border rounded-xl bg-background/80 shadow-sm"
+                        >
+                          <div className="flex items-start gap-2">
+                            <Music2 className="w-4 h-4 mt-1 text-primary" />
 
-                        {line.lyric && (
-                          <p className="text-sm text-muted-foreground mt-2">
-                            {line.lyric}
-                          </p>
-                        )}
-                      </div>
-                    ))}
+                            <div className="flex-1">
+                              <p className="font-bold text-base">
+                                {line.notes?.trim() || "No notes"}
+                              </p>
+
+                              {line.lyric?.trim() && (
+                                <p className="text-sm text-muted-foreground mt-2">
+                                  {line.lyric.trim()}
+                                </p>
+                              )}
+                            </div>
+                          </div>
+                        </div>
+                      ))
+                    ) : (
+                      <p className="text-sm text-muted-foreground py-4">
+                        Không có dữ liệu
+                      </p>
+                    )}
                   </CardContent>
                 </Card>
               ))}
