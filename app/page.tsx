@@ -2,8 +2,8 @@
 
 import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
-import { Search, Music2, ArrowUpRight, Library, Waves } from "lucide-react";
-import { getSongs } from "./lib/api";
+import { Search, Music2, ArrowUpRight, Library } from "lucide-react";
+import { getSongCategories, getSongs, type SongListItem } from "./lib/api";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -15,12 +15,6 @@ import {
   PaginationNext,
   PaginationPrevious,
 } from "@/components/ui/pagination";
-
-type Song = {
-  _id: string;
-  title: string;
-  category?: string;
-};
 
 function LoadingCard() {
   return (
@@ -38,60 +32,121 @@ function LoadingCard() {
 
 export default function Home() {
   const ITEMS_PER_PAGE = 9;
-  const [songs, setSongs] = useState<Song[]>([]);
+  const [songs, setSongs] = useState<SongListItem[]>([]);
+  const [categories, setCategories] = useState<string[]>(["Tất cả"]);
   const [keyword, setKeyword] = useState("");
+  const [debouncedKeyword, setDebouncedKeyword] = useState("");
   const [selectedCategory, setSelectedCategory] = useState("Tất cả");
   const [currentPage, setCurrentPage] = useState(1);
+  const [totalSongs, setTotalSongs] = useState(0);
+  const [totalPages, setTotalPages] = useState(1);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    console.log("ENV:", process.env.NEXT_PUBLIC_API_URL);
-    getSongs()
-      .then((data: Song[]) => setSongs(Array.isArray(data) ? data : []))
-      .finally(() => setLoading(false));
+    const timeout = setTimeout(() => {
+      setDebouncedKeyword(keyword.trim());
+    }, 300);
+
+    return () => clearTimeout(timeout);
+  }, [keyword]);
+
+  useEffect(() => {
+    let mounted = true;
+
+    getSongCategories()
+      .then((data) => {
+        if (!mounted || !Array.isArray(data)) {
+          return;
+        }
+
+        setCategories(["Tất cả", ...data]);
+      })
+      .catch(() => {
+        if (mounted) {
+          setCategories(["Tất cả"]);
+        }
+      });
+
+    return () => {
+      mounted = false;
+    };
   }, []);
 
-  const categories = useMemo(() => {
-    const uniqueCategories = Array.from(
-      new Set(songs.map((song) => song.category?.trim() || "Uncategorized")),
-    ).sort((a, b) => a.localeCompare(b));
+  useEffect(() => {
+    let mounted = true;
 
-    return ["Tất cả", ...uniqueCategories];
-  }, [songs]);
+    setLoading(true);
 
-  const filteredSongs = useMemo(() => {
-    const normalizedKeyword = keyword.trim().toLowerCase();
+    getSongs({
+      search: debouncedKeyword || undefined,
+      category:
+        selectedCategory === "Tất cả" ? undefined : selectedCategory,
+      page: currentPage,
+      limit: ITEMS_PER_PAGE,
+    })
+      .then((data) => {
+        if (!mounted) {
+          return;
+        }
 
-    return songs.filter((song) => {
-      const songCategory = song.category?.trim() || "Uncategorized";
-      const keywordMatches = normalizedKeyword
-        ? song.title.toLowerCase().includes(normalizedKeyword)
-        : true;
-      const categoryMatches =
-        selectedCategory === "Tất cả" || songCategory === selectedCategory;
+        const nextTotalPages = Math.max(1, data.totalPages || 1);
 
-      return keywordMatches && categoryMatches;
-    });
-  }, [songs, keyword, selectedCategory]);
+        setSongs(Array.isArray(data.items) ? data.items : []);
+        setTotalSongs(data.total || 0);
+        setTotalPages(nextTotalPages);
 
-  const totalPages = Math.max(
-    1,
-    Math.ceil(filteredSongs.length / ITEMS_PER_PAGE),
-  );
+        if (currentPage > nextTotalPages) {
+          setCurrentPage(nextTotalPages);
+        }
+      })
+      .catch(() => {
+        if (!mounted) {
+          return;
+        }
 
-  const paginatedSongs = useMemo(() => {
-    const startIndex = (currentPage - 1) * ITEMS_PER_PAGE;
-    return filteredSongs.slice(startIndex, startIndex + ITEMS_PER_PAGE);
-  }, [filteredSongs, currentPage, ITEMS_PER_PAGE]);
+        setSongs([]);
+        setTotalSongs(0);
+        setTotalPages(1);
+      })
+      .finally(() => {
+        if (mounted) {
+          setLoading(false);
+        }
+      });
+
+    return () => {
+      mounted = false;
+    };
+  }, [debouncedKeyword, selectedCategory, currentPage]);
 
   useEffect(() => {
     setCurrentPage(1);
-  }, [keyword, selectedCategory]);
+  }, [debouncedKeyword, selectedCategory]);
 
-  useEffect(() => {
-    if (currentPage > totalPages) {
-      setCurrentPage(totalPages);
+  const visiblePages = useMemo(() => {
+    if (totalPages <= 7) {
+      return Array.from({ length: totalPages }, (_, index) => index + 1);
     }
+
+    const pages: Array<number | string> = [1];
+    const start = Math.max(2, currentPage - 1);
+    const end = Math.min(totalPages - 1, currentPage + 1);
+
+    if (start > 2) {
+      pages.push("start-ellipsis");
+    }
+
+    for (let page = start; page <= end; page += 1) {
+      pages.push(page);
+    }
+
+    if (end < totalPages - 1) {
+      pages.push("end-ellipsis");
+    }
+
+    pages.push(totalPages);
+
+    return pages;
   }, [currentPage, totalPages]);
 
   return (
@@ -117,7 +172,7 @@ export default function Home() {
                 className="h-auto justify-start gap-2 rounded-xl px-3 py-2 text-xs sm:text-sm"
               >
                 <Library className="h-3.5 w-3.5" />
-                {songs.length} bài nhạc
+                {totalSongs} bài nhạc
               </Badge>
             </div>
           </div>
@@ -167,7 +222,7 @@ export default function Home() {
                 <LoadingCard key={index} />
               ))}
             </div>
-          ) : filteredSongs.length === 0 ? (
+          ) : songs.length === 0 ? (
             <section className="rounded-3xl border border-dashed border-border/80 bg-card/40 p-8 text-center backdrop-blur sm:p-12">
               <Music2 className="mx-auto h-10 w-10 text-muted-foreground" />
               <h2 className="mt-4 text-xl font-semibold sm:text-2xl">
@@ -179,7 +234,7 @@ export default function Home() {
             </section>
           ) : (
             <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 sm:gap-5 lg:grid-cols-3">
-              {paginatedSongs.map((song) => (
+              {songs.map((song) => (
                 <Link
                   key={song._id}
                   href={`/songs/${song._id}`}
@@ -210,7 +265,7 @@ export default function Home() {
             </div>
           )}
 
-          {!loading && filteredSongs.length > 0 && (
+          {!loading && songs.length > 0 && (
             <Pagination className="mt-6 sm:mt-8">
               <PaginationContent>
                 <PaginationItem>
@@ -229,8 +284,16 @@ export default function Home() {
                   />
                 </PaginationItem>
 
-                {Array.from({ length: totalPages }).map((_, index) => {
-                  const page = index + 1;
+                {visiblePages.map((page) => {
+                  if (typeof page !== "number") {
+                    return (
+                      <PaginationItem key={page}>
+                        <span className="px-3 py-2 text-sm text-muted-foreground">
+                          ...
+                        </span>
+                      </PaginationItem>
+                    );
+                  }
 
                   return (
                     <PaginationItem key={page}>
