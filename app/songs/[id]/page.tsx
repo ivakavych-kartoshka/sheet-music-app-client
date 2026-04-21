@@ -1,26 +1,9 @@
-import axios from "axios";
 import Link from "next/link";
 import { ArrowLeft, ExternalLink, Music2 } from "lucide-react";
+import type { SongDetailData } from "@/app/lib/api";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-
-type SongLine = {
-  lyric?: string;
-  notes?: string;
-};
-
-type SongSection = {
-  title?: string;
-  lines?: SongLine[];
-};
-
-type SongDetailData = {
-  title?: string;
-  category?: string;
-  audioUrl?: string;
-  sections?: SongSection[];
-};
 
 type SongError = {
   response?: {
@@ -33,13 +16,29 @@ type SongError = {
 };
 
 async function getSong(id: string): Promise<SongDetailData> {
-  console.log("ENV:", process.env.NEXT_PUBLIC_API_URL);
-  const res = await axios.get(
-    `https://sheet-music-app-npoe.onrender.com/songs/${id}`,
-    { timeout: 10000 },
-  );
+  const backendUrl = process.env.NEXT_PUBLIC_API_URL;
 
-  return res.data;
+  if (!backendUrl) {
+    throw new Error("NEXT_PUBLIC_API_URL is missing");
+  }
+
+  const response = await fetch(`${backendUrl}/songs/${id}`, {
+    cache: "no-store",
+  });
+
+  if (!response.ok) {
+    throw new Error(`Failed to load song ${id}`);
+  }
+
+  return (await response.json()) as SongDetailData;
+}
+
+function canPlayAudioDirectly(url: string): boolean {
+  const normalized = url.toLowerCase();
+  return (
+    /\.(mp3|wav|ogg|m4a)(\?.*)?$/.test(normalized) ||
+    normalized.includes("/video/upload/")
+  );
 }
 
 interface Props {
@@ -55,6 +54,7 @@ export default async function SongDetail({ params }: Props) {
     const song = await getSong(id);
     const fallbackBeatUrl = "https://www.youtube.com/watch?v=Fl933Iu7phA";
     const beatUrl = song?.audioUrl?.trim() || fallbackBeatUrl;
+    const canPlayDirect = canPlayAudioDirectly(beatUrl);
 
     return (
       <main className="relative min-h-screen overflow-hidden bg-background text-foreground">
@@ -68,7 +68,7 @@ export default async function SongDetail({ params }: Props) {
           <Link href="/" className="inline-block">
             <Button variant="outline" className="gap-2 rounded-xl">
               <ArrowLeft className="h-4 w-4" />
-              Back to songs
+              Quay lại
             </Button>
           </Link>
 
@@ -84,7 +84,23 @@ export default async function SongDetail({ params }: Props) {
                 {song?.title?.trim() || "Untitled"}
               </CardTitle>
 
-              <div>
+              <div className="space-y-3">
+                {canPlayDirect ? (
+                  <div className="rounded-xl border border-border/70 bg-background/70 p-3">
+                    <p className="mb-2 text-sm font-medium text-muted-foreground">
+                      Trình phát beat (phát trực tiếp từ link audio):
+                    </p>
+                    <audio controls className="w-full" preload="none">
+                      <source src={beatUrl} />
+                      Trình duyệt của bạn không hỗ trợ phần tử audio. 
+                    </audio>
+                  </div>
+                ) : (
+                  <p className="text-sm text-muted-foreground">
+                    Link beat không hỗ trợ phát trực tiếp. Vui lòng nhấn nút bên dưới để xem beat trên YouTube.
+                  </p>
+                )}
+
                 <Button
                   asChild
                   variant="secondary"
@@ -118,15 +134,24 @@ export default async function SongDetail({ params }: Props) {
                         {section.lines.map((line, lineIndex) => (
                           <div
                             key={lineIndex}
-                            className="rounded-xl border border-border/70 bg-background/70 p-4"
+                            className="rounded-xl border border-border/70 bg-background/80 p-4 shadow-sm"
                           >
-                            <p className="text-sm leading-relaxed text-foreground sm:text-base">
-                              {line?.lyric?.trim() || "-"}
-                            </p>
-                            <p className="mt-2 flex items-center gap-2 text-xs font-medium text-muted-foreground sm:text-sm">
-                              <Music2 className="h-3.5 w-3.5" />
-                              {line?.notes?.trim() || "No notes"}
-                            </p>
+                            <div className="flex items-start gap-3">
+                              <Music2 className="mt-2 h-4 w-4 text-primary" />
+                              <div className="min-w-0">
+                                <p className="mt-1 text-base font-extrabold leading-relaxed text-foreground sm:text-lg">
+                                  {line?.notes?.trim() || "Chưa có nốt"}
+                                </p>
+                              </div>
+                            </div>
+
+                            {line?.lyric?.trim() && (
+                              <div className="mt-3">
+                                <p className="mt-1 text-sm leading-relaxed text-muted-foreground sm:text-base">
+                                  {line.lyric.trim()}
+                                </p>
+                              </div>
+                            )}
                           </div>
                         ))}
                       </div>

@@ -2,9 +2,20 @@
 
 import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
-import { Search, Music2, ArrowUpRight, Library } from "lucide-react";
+import {
+  Search,
+  Music2,
+  ArrowUpRight,
+  Library,
+  Moon,
+  Sun,
+  ArrowUp,
+  LayoutDashboard,
+} from "lucide-react";
+import { useTheme } from "next-themes";
 import { getSongCategories, getSongs, type SongListItem } from "./lib/api";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import {
@@ -19,8 +30,8 @@ import {
 function LoadingCard() {
   return (
     <Card className="h-full overflow-hidden border-border/60 bg-card/60 backdrop-blur">
-      <div className="h-36 animate-pulse bg-muted/60 sm:h-40" />
-      <CardHeader className="pb-2">
+      <CardHeader className="space-y-3 pb-2">
+        <div className="h-5 w-1/3 animate-pulse rounded bg-muted/70" />
         <div className="h-5 w-3/4 animate-pulse rounded bg-muted/70" />
       </CardHeader>
       <CardContent>
@@ -32,15 +43,26 @@ function LoadingCard() {
 
 export default function Home() {
   const ITEMS_PER_PAGE = 9;
+  const { resolvedTheme, setTheme } = useTheme();
   const [songs, setSongs] = useState<SongListItem[]>([]);
   const [categories, setCategories] = useState<string[]>(["Tất cả"]);
   const [keyword, setKeyword] = useState("");
   const [debouncedKeyword, setDebouncedKeyword] = useState("");
+  const [isThemeMounted, setIsThemeMounted] = useState(false);
   const [selectedCategory, setSelectedCategory] = useState("Tất cả");
   const [currentPage, setCurrentPage] = useState(1);
   const [totalSongs, setTotalSongs] = useState(0);
   const [totalPages, setTotalPages] = useState(1);
   const [loading, setLoading] = useState(true);
+  const [showBackToTop, setShowBackToTop] = useState(false);
+
+  const handleBackToTop = () => {
+    window.scrollTo({ top: 0, behavior: "smooth" });
+  };
+
+  useEffect(() => {
+    setIsThemeMounted(true);
+  }, []);
 
   useEffect(() => {
     const timeout = setTimeout(() => {
@@ -75,12 +97,12 @@ export default function Home() {
   useEffect(() => {
     let mounted = true;
 
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setLoading(true);
 
     getSongs({
       search: debouncedKeyword || undefined,
-      category:
-        selectedCategory === "Tất cả" ? undefined : selectedCategory,
+      category: selectedCategory === "Tất cả" ? undefined : selectedCategory,
       page: currentPage,
       limit: ITEMS_PER_PAGE,
     })
@@ -123,6 +145,19 @@ export default function Home() {
     setCurrentPage(1);
   }, [debouncedKeyword, selectedCategory]);
 
+  useEffect(() => {
+    const handleScroll = () => {
+      setShowBackToTop(window.scrollY > 300);
+    };
+
+    window.addEventListener("scroll", handleScroll, { passive: true });
+    handleScroll();
+
+    return () => {
+      window.removeEventListener("scroll", handleScroll);
+    };
+  }, []);
+
   const visiblePages = useMemo(() => {
     if (totalPages <= 7) {
       return Array.from({ length: totalPages }, (_, index) => index + 1);
@@ -162,7 +197,7 @@ export default function Home() {
           <div className="flex flex-col gap-6 lg:flex-row lg:items-end lg:justify-between">
             <div className="max-w-2xl">
               <h1 className="text-balance text-3xl font-semibold tracking-tight sm:text-4xl lg:text-5xl">
-                Sheet Music Library
+                THƯ VIỆN FTC
               </h1>
             </div>
 
@@ -174,6 +209,36 @@ export default function Home() {
                 <Library className="h-3.5 w-3.5" />
                 {totalSongs} bài nhạc
               </Badge>
+              <div className="inline-flex items-center gap-1 rounded-xl border border-border/70 bg-background/80 p-1">
+                <Button
+                  type="button"
+                  variant={
+                    isThemeMounted && resolvedTheme === "light"
+                      ? "secondary"
+                      : "ghost"
+                  }
+                  size="sm"
+                  className="rounded-lg"
+                  onClick={() => setTheme("light")}
+                >
+                  <Sun className="h-3.5 w-3.5" />
+                  Light
+                </Button>
+                <Button
+                  type="button"
+                  variant={
+                    isThemeMounted && resolvedTheme === "dark"
+                      ? "secondary"
+                      : "ghost"
+                  }
+                  size="sm"
+                  className="rounded-lg"
+                  onClick={() => setTheme("dark")}
+                >
+                  <Moon className="h-3.5 w-3.5" />
+                  Dark
+                </Button>
+              </div>
             </div>
           </div>
 
@@ -238,6 +303,7 @@ export default function Home() {
                 <Link
                   key={song._id}
                   href={`/songs/${song._id}`}
+                  prefetch={false}
                   className="group block"
                 >
                   <Card className="h-full rounded-2xl border-border/60 bg-card/75 transition-transform duration-300 hover:-translate-y-1 hover:border-foreground/25 hover:shadow-lg">
@@ -333,6 +399,43 @@ export default function Home() {
           )}
         </div>
       </section>
+
+      <footer className="relative border-t border-border/60 bg-card/40 backdrop-blur">
+        <div className="mx-auto w-full max-w-7xl px-4 py-5 text-muted-foreground sm:px-6 sm:py-6 lg:px-8">
+          <div className="flex flex-col items-center gap-3 text-center md:flex-row md:items-center md:justify-between md:text-left">
+            <p className="text-xs leading-relaxed sm:text-sm">
+              © {new Date().getFullYear()} THƯ VIỆN FTC. Bảo lưu mọi quyền.
+            </p>
+            <div className="flex w-full flex-col items-center gap-2 sm:w-auto sm:flex-row sm:justify-end">
+              <p className="text-xs sm:text-sm">
+                Được xây dựng bởi Phạm Khả Vy.
+              </p>
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                className="w-full rounded-lg sm:w-auto"
+                onClick={handleBackToTop}
+              >
+                <ArrowUp className="h-3.5 w-3.5" />
+                Lên đầu trang
+              </Button>
+            </div>
+          </div>
+        </div>
+      </footer>
+
+      {showBackToTop && (
+        <Button
+          type="button"
+          size="icon"
+          className="fixed bottom-5 right-5 z-20 rounded-full shadow-lg"
+          onClick={handleBackToTop}
+          aria-label="Back to top"
+        >
+          <ArrowUp className="h-4 w-4" />
+        </Button>
+      )}
     </main>
   );
 }
