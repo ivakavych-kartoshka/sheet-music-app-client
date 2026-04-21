@@ -17,19 +17,19 @@ type SongError = {
 
 // ================= HELPERS =================
 
-async function getSong(id: string): Promise<SongDetailData> {
+async function getSong(slug: string): Promise<SongDetailData> {
   const backendUrl = process.env.NEXT_PUBLIC_API_URL;
 
   if (!backendUrl) {
     throw new Error("NEXT_PUBLIC_API_URL is missing");
   }
 
-  const response = await fetch(`${backendUrl}/songs/${id}`, {
+  const response = await fetch(`${backendUrl}/songs/slug/${slug}`, {
     cache: "no-store",
   });
 
   if (!response.ok) {
-    throw new Error(`Failed to load song ${id}`);
+    throw new Error(`Failed to load song with slug '${slug}'`);
   }
 
   return (await response.json()) as SongDetailData;
@@ -69,7 +69,7 @@ function getYouTubeId(url: string): string | null {
 
 interface Props {
   params: Promise<{
-    id: string;
+    id: string; // This is now the slug, not the ID
   }>;
 }
 

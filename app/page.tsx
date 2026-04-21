@@ -302,7 +302,7 @@ export default function Home() {
               {songs.map((song) => (
                 <Link
                   key={song._id}
-                  href={`/songs/${song._id}`}
+                  href={`/songs/${song.slug}`}
                   prefetch={false}
                   className="group block"
                 >

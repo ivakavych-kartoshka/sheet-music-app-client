@@ -10,6 +10,7 @@ let categoriesInFlight: Promise<string[]> | null = null;
 export type SongListItem = {
   _id: string;
   title: string;
+  slug: string;
   category?: string;
 };
 
@@ -26,6 +27,7 @@ export type SongSection = {
 export type SongDetailData = {
   _id?: string;
   title?: string;
+  slug?: string;
   category?: string;
   audioUrl?: string;
   sections?: SongSection[];
@@ -127,6 +129,13 @@ export const deleteSong = async (id: string) => {
 
 export const getSongById = async (id: string) => {
   const res = await API.get<SongDetailData>(`/songs/${id}`, {
+    timeout: 10000,
+  });
+  return res.data;
+};
+
+export const getSongBySlug = async (slug: string) => {
+  const res = await API.get<SongDetailData>(`/songs/slug/${slug}`, {
     timeout: 10000,
   });
   return res.data;
