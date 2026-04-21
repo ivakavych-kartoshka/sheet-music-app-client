@@ -15,6 +15,8 @@ type SongError = {
   message?: string;
 };
 
+// ================= HELPERS =================
+
 async function getSong(id: string): Promise<SongDetailData> {
   const backendUrl = process.env.NEXT_PUBLIC_API_URL;
 
@@ -41,6 +43,30 @@ function canPlayAudioDirectly(url: string): boolean {
   );
 }
 
+function isYouTubeUrl(url: string): boolean {
+  return url.includes("youtube.com") || url.includes("youtu.be");
+}
+
+function getYouTubeId(url: string): string | null {
+  try {
+    const parsed = new URL(url);
+
+    if (parsed.hostname === "youtu.be") {
+      return parsed.pathname.slice(1);
+    }
+
+    if (parsed.hostname.includes("youtube.com")) {
+      return parsed.searchParams.get("v");
+    }
+
+    return null;
+  } catch {
+    return null;
+  }
+}
+
+// ================= PAGE =================
+
 interface Props {
   params: Promise<{
     id: string;
@@ -52,12 +78,17 @@ export default async function SongDetail({ params }: Props) {
 
   try {
     const song = await getSong(id);
+
     const fallbackBeatUrl = "https://www.youtube.com/watch?v=Fl933Iu7phA";
     const beatUrl = song?.audioUrl?.trim() || fallbackBeatUrl;
+
+    const youtubeId = isYouTubeUrl(beatUrl) ? getYouTubeId(beatUrl) : null;
+
     const canPlayDirect = canPlayAudioDirectly(beatUrl);
 
     return (
       <main className="relative min-h-screen overflow-hidden bg-background text-foreground">
+        {/* Background */}
         <div className="pointer-events-none absolute inset-0">
           <div className="absolute -left-20 top-0 h-[22rem] w-[22rem] rounded-full bg-amber-300/12 blur-3xl" />
           <div className="absolute -right-20 top-28 h-[22rem] w-[22rem] rounded-full bg-sky-300/10 blur-3xl" />
@@ -65,6 +96,7 @@ export default async function SongDetail({ params }: Props) {
         </div>
 
         <section className="relative mx-auto w-full max-w-5xl px-4 pb-12 pt-8 sm:px-6 sm:pb-16 sm:pt-10 lg:px-8">
+          {/* Back */}
           <Link href="/" className="inline-block">
             <Button variant="outline" className="gap-2 rounded-xl">
               <ArrowLeft className="h-4 w-4" />
@@ -72,6 +104,7 @@ export default async function SongDetail({ params }: Props) {
             </Button>
           </Link>
 
+          {/* HEADER */}
           <Card className="mt-5 rounded-3xl border-border/60 bg-card/75 shadow-sm backdrop-blur-md sm:mt-6">
             <CardHeader className="gap-4 pb-4">
               <Badge
@@ -80,33 +113,51 @@ export default async function SongDetail({ params }: Props) {
               >
                 {song?.category?.trim() || "Uncategorized"}
               </Badge>
-              <CardTitle className="text-balance text-2xl font-semibold tracking-tight sm:text-3xl lg:text-4xl">
+
+              <CardTitle className="text-2xl font-semibold sm:text-3xl lg:text-4xl">
                 {song?.title?.trim() || "Untitled"}
               </CardTitle>
 
+              {/* PLAYER */}
               <div className="space-y-3">
-                {canPlayDirect ? (
+                {/* YOUTUBE */}
+                {youtubeId ? (
                   <div className="rounded-xl border border-border/70 bg-background/70 p-3">
-                    <p className="mb-2 text-sm font-medium text-muted-foreground">
-                      Trình phát beat (phát trực tiếp từ link audio):
+                    <p className="mb-2 text-sm text-muted-foreground">
+                      Beat YouTube:
                     </p>
-                    <audio controls className="w-full" preload="none">
+
+                    <div className="aspect-video w-full overflow-hidden rounded-lg">
+                      <iframe
+                        className="h-full w-full"
+                        src={`https://www.youtube.com/embed/${youtubeId}`}
+                        title="YouTube player"
+                        allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                        allowFullScreen
+                      />
+                    </div>
+                  </div>
+                ) : canPlayDirect ? (
+                  /* AUDIO */
+                  <div className="rounded-xl border border-border/70 bg-background/70 p-3">
+                    <p className="mb-2 text-sm text-muted-foreground">Audio:</p>
+                    <audio controls className="w-full">
                       <source src={beatUrl} />
-                      Trình duyệt của bạn không hỗ trợ phần tử audio. 
                     </audio>
                   </div>
                 ) : (
                   <p className="text-sm text-muted-foreground">
-                    Link beat không hỗ trợ phát trực tiếp. Vui lòng nhấn nút bên dưới để xem beat trên YouTube.
+                    Link không hỗ trợ phát trực tiếp.
                   </p>
                 )}
 
+                {/* OPEN LINK */}
                 <Button
                   asChild
                   variant="secondary"
-                  className="mt-1 gap-2 rounded-xl"
+                  className="gap-2 rounded-xl"
                 >
-                  <a href={beatUrl} target="_blank" rel="noopener noreferrer">
+                  <a href={beatUrl} target="_blank">
                     Xem beat
                     <ExternalLink className="h-4 w-4" />
                   </a>
@@ -115,63 +166,40 @@ export default async function SongDetail({ params }: Props) {
             </CardHeader>
           </Card>
 
-          {song?.sections && song.sections.length > 0 ? (
-            <div className="mt-6 space-y-4 sm:mt-8 sm:space-y-5">
+          {/* CONTENT */}
+          {song?.sections?.length ? (
+            <div className="mt-6 space-y-4">
               {song.sections.map((section, index) => (
-                <Card
-                  key={index}
-                  className="rounded-2xl border-border/60 bg-card/75 shadow-sm transition-colors hover:border-foreground/20"
-                >
-                  <CardHeader className="pb-3">
-                    <CardTitle className="text-lg font-semibold sm:text-xl">
-                      {section?.title?.trim() || `Section ${index + 1}`}
+                <Card key={index} className="rounded-2xl">
+                  <CardHeader>
+                    <CardTitle>
+                      {section.title || `Section ${index + 1}`}
                     </CardTitle>
                   </CardHeader>
 
-                  <CardContent>
-                    {section?.lines && section.lines.length > 0 ? (
-                      <div className="space-y-3 sm:space-y-4">
-                        {section.lines.map((line, lineIndex) => (
-                          <div
-                            key={lineIndex}
-                            className="rounded-xl border border-border/70 bg-background/80 p-4 shadow-sm"
-                          >
-                            <div className="flex items-start gap-3">
-                              <Music2 className="mt-2 h-4 w-4 text-primary" />
-                              <div className="min-w-0">
-                                <p className="mt-1 text-base font-extrabold leading-relaxed text-foreground sm:text-lg">
-                                  {line?.notes?.trim() || "Chưa có nốt"}
-                                </p>
-                              </div>
-                            </div>
+                  <CardContent className="space-y-3">
+                    {section.lines.map((line, i) => (
+                      <div key={i} className="p-4 border rounded-xl">
+                        <div className="flex gap-2">
+                          <Music2 className="w-4 h-4 mt-1" />
+                          <p className="font-bold">
+                            {line.notes || "No notes"}
+                          </p>
+                        </div>
 
-                            {line?.lyric?.trim() && (
-                              <div className="mt-3">
-                                <p className="mt-1 text-sm leading-relaxed text-muted-foreground sm:text-base">
-                                  {line.lyric.trim()}
-                                </p>
-                              </div>
-                            )}
-                          </div>
-                        ))}
+                        {line.lyric && (
+                          <p className="text-sm text-muted-foreground mt-2">
+                            {line.lyric}
+                          </p>
+                        )}
                       </div>
-                    ) : (
-                      <p className="py-4 text-sm text-muted-foreground sm:text-base">
-                        No lyrics available.
-                      </p>
-                    )}
+                    ))}
                   </CardContent>
                 </Card>
               ))}
             </div>
           ) : (
-            <Card className="mt-6 rounded-2xl border-border/60 bg-card/75 shadow-sm sm:mt-8">
-              <CardContent className="py-10 text-center sm:py-14">
-                <p className="text-sm text-muted-foreground sm:text-base">
-                  No sections available for this song.
-                </p>
-              </CardContent>
-            </Card>
+            <p className="mt-6 text-muted-foreground">No data available</p>
           )}
         </section>
       </main>
@@ -180,37 +208,15 @@ export default async function SongDetail({ params }: Props) {
     const typedError = error as SongError;
 
     return (
-      <main className="relative min-h-screen overflow-hidden bg-background text-foreground">
-        <section className="mx-auto flex min-h-screen w-full max-w-2xl items-center px-4 py-12 sm:px-6 lg:px-8">
-          <Card className="w-full rounded-2xl border-destructive/25 bg-card/80 shadow-sm">
-            <CardHeader>
-              <CardTitle className="text-xl text-destructive sm:text-2xl">
-                Error loading song
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-4 text-sm sm:text-base">
-              <div>
-                <p className="font-semibold text-muted-foreground">
-                  Status code
-                </p>
-                <p>{typedError.response?.status || "Unknown"}</p>
-              </div>
+      <main className="flex items-center justify-center min-h-screen">
+        <Card className="p-6">
+          <CardTitle>Error loading song</CardTitle>
+          <p>{typedError.message}</p>
 
-              <div>
-                <p className="font-semibold text-muted-foreground">Message</p>
-                <p>
-                  {typedError.response?.data?.message ||
-                    typedError.message ||
-                    "Unknown error"}
-                </p>
-              </div>
-
-              <Link href="/" className="block pt-1">
-                <Button className="w-full">Back to songs</Button>
-              </Link>
-            </CardContent>
-          </Card>
-        </section>
+          <Link href="/">
+            <Button className="mt-4">Back</Button>
+          </Link>
+        </Card>
       </main>
     );
   }
