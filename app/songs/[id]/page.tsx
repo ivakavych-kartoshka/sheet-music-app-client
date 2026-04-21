@@ -157,10 +157,6 @@ export default async function SongDetail({ params }: Props) {
                   variant="secondary"
                   className="gap-2 rounded-xl"
                 >
-                  <a href={beatUrl} target="_blank">
-                    Xem beat
-                    <ExternalLink className="h-4 w-4" />
-                  </a>
                 </Button>
               </div>
             </CardHeader>

@@ -64,6 +64,21 @@ export type CreateSongInput = {
   images?: string[];
 };
 
+export type NormalizeSongInput = {
+  rawText: string;
+  title?: string;
+  category?: string;
+  audioUrl?: string;
+};
+
+export type NormalizeSongResponse = {
+  payload: CreateSongInput;
+  meta?: {
+    sectionsCount?: number;
+    linesCount?: number;
+  };
+};
+
 export const getSongs = async (params?: GetSongsParams) => {
   const res = await API.get<GetSongsResponse>("/songs", { params });
   return res.data;
@@ -92,6 +107,11 @@ export const getSongCategories = async (forceRefresh = false) => {
 
 export const createSong = async (payload: CreateSongInput) => {
   const res = await API.post("/songs", payload);
+  return res.data;
+};
+
+export const normalizeSong = async (payload: NormalizeSongInput) => {
+  const res = await API.post<NormalizeSongResponse>("/songs/normalize", payload);
   return res.data;
 };
 
