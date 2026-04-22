@@ -14,6 +14,8 @@ import {
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
+import { cn } from "@/lib/utils";
+import { useToast } from "@/hooks/use-toast";
 
 type SongLineForm = {
 	lyric: string;
@@ -52,8 +54,7 @@ export function SongForm({ mode, songId, onSaved }: SongFormProps) {
 	const [uploadingAudio, setUploadingAudio] = useState(false);
 	const [normalizing, setNormalizing] = useState(false);
 	const [submitting, setSubmitting] = useState(false);
-	const [message, setMessage] = useState<string | null>(null);
-	const [error, setError] = useState<string | null>(null);
+	const { toast } = useToast();
 
 	const resetForm = () => {
 		setTitle("");
@@ -92,7 +93,6 @@ export function SongForm({ mode, songId, onSaved }: SongFormProps) {
 
 		const fetchSong = async () => {
 			try {
-				setError(null);
 				setLoadingSong(true);
 				const song = await getSongById(songId);
 
@@ -118,9 +118,11 @@ export function SongForm({ mode, songId, onSaved }: SongFormProps) {
 						: [createEmptySection()],
 				);
 			} catch {
-				if (mounted) {
-					setError("Khong the tai bai hat de chinh sua.");
-				}
+				toast({
+					title: "Lỗi",
+					description: "Không thể tải bài hát để chỉnh sửa.",
+					variant: "destructive",
+				});
 			} finally {
 				if (mounted) {
 					setLoadingSong(false);
@@ -149,14 +151,16 @@ export function SongForm({ mode, songId, onSaved }: SongFormProps) {
 			selectedFile.name.toLowerCase().endsWith(".mp3");
 
 		if (!isMp3) {
-			setError("Chi ho tro file mp3.");
+			toast({
+				title: "Lỗi",
+				description: "Chỉ hỗ trợ file mp3.",
+				variant: "destructive",
+			});
 			event.target.value = "";
 			return;
 		}
 
 		try {
-			setError(null);
-			setMessage(null);
 			setUploadingAudio(true);
 
 			const result = await uploadAudioFile(selectedFile);
@@ -166,9 +170,16 @@ export function SongForm({ mode, songId, onSaved }: SongFormProps) {
 			}
 
 			setAudioUrl(result.audioUrl);
-			setMessage("Upload audio thanh cong.");
+			toast({
+				title: "Thành công",
+				description: "Upload audio thành công.",
+			});
 		} catch {
-			setError("Upload audio that bai. Kiem tra backend Cloudinary env va thu lai.");
+			toast({
+				title: "Lỗi",
+				description: "Upload audio thất bại.",
+				variant: "destructive",
+			});
 		} finally {
 			setUploadingAudio(false);
 			event.target.value = "";
@@ -238,6 +249,7 @@ export function SongForm({ mode, songId, onSaved }: SongFormProps) {
 		);
 	};
 
+	
 	const handleNormalizeFromRawText = async () => {
 		if (isEditMode) {
 			return;
@@ -245,13 +257,15 @@ export function SongForm({ mode, songId, onSaved }: SongFormProps) {
 
 		const rawText = rawInput.trim();
 		if (!rawText) {
-			setError("Vui long dan text tho truoc khi chuan hoa.");
+			toast({
+				title: "Lỗi",
+				description: "Vui lòng nhập lời bài hát và nốt trước khi format.",
+				variant: "destructive",
+			});
 			return;
 		}
 
 		try {
-			setError(null);
-			setMessage(null);
 			setNormalizing(true);
 
 			const normalized = await normalizeSong({
@@ -262,16 +276,25 @@ export function SongForm({ mode, songId, onSaved }: SongFormProps) {
 			});
 
 			if (!normalized.payload) {
-				setError("Khong nhan duoc du lieu chuan hoa tu backend.");
+				toast({
+					title: "Lỗi",
+					description: "Không nhận được dữ liệu chuẩn hóa.",
+					variant: "destructive",
+				});
 				return;
 			}
 
 			applyNormalizedPayload(normalized.payload);
-			setMessage(
-				`Da chuan hoa ${normalized.meta?.sectionsCount ?? normalized.payload.sections.length} section tu text tho.`,
-			);
+			toast({
+				title: "Thành công",
+				description: `Đã chuẩn hóa ${normalized.meta?.sectionsCount ?? normalized.payload.sections.length} section.`,
+			});
 		} catch {
-			setError("Chuan hoa that bai. Kiem tra format text hoac backend va thu lai.");
+			toast({
+				title: "Lỗi",
+				description: "Chuẩn hóa thất bại. Kiểm tra format text và thử lại.",
+				variant: "destructive",
+			});
 		} finally {
 			setNormalizing(false);
 		}
@@ -298,7 +321,7 @@ export function SongForm({ mode, songId, onSaved }: SongFormProps) {
 			}))
 			.filter((section) => section.title && section.lines.length > 0);
 
-		if (!title.trim() || !category.trim() || normalizedSections.length === 0) {
+		if (!title.trim() || !category.trim()) {
 			return null;
 		}
 
@@ -306,24 +329,30 @@ export function SongForm({ mode, songId, onSaved }: SongFormProps) {
 			title: title.trim(),
 			category: category.trim(),
 			audioUrl: audioUrl.trim() || undefined,
-			sections: normalizedSections,
+			sections: normalizedSections.length > 0 ? normalizedSections : [],
 		};
 	};
 
 	const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
 		event.preventDefault();
-		setMessage(null);
-		setError(null);
 
 		const payload = buildPayload();
 
 		if (!payload) {
-			setError("Vui long nhap day du tieu de, the loai va it nhat 1 section hop le.");
+			toast({
+				title: "Lỗi",
+				description: "Vui lòng nhập tiêu đề và thể loại.",
+				variant: "destructive",
+			});
 			return;
 		}
 
 		if (isEditMode && !songId) {
-			setError("Khong tim thay ID bai hat de cap nhat.");
+			toast({
+				title: "Lỗi",
+				description: "Không tìm thấy ID bài hát để cập nhật.",
+				variant: "destructive",
+			});
 			return;
 		}
 
@@ -332,16 +361,26 @@ export function SongForm({ mode, songId, onSaved }: SongFormProps) {
 
 			if (isEditMode && songId) {
 				await updateSong(songId, payload);
-				setMessage("Cap nhat bai hat thanh cong.");
+				toast({
+					title: "Thành công",
+					description: "Cập nhật bài hát thành công.",
+				});
 			} else {
 				await createSong(payload);
-				setMessage("Them bai hat thanh cong.");
+				toast({
+					title: "Thành công",
+					description: "Thêm bài hát thành công.",
+				});
 				resetForm();
 			}
 
 			onSaved?.();
 		} catch {
-			setError("Khong the luu bai hat. Vui long thu lai.");
+			toast({
+				title: "Lỗi",
+				description: "Không thể lưu bài hát. Vui lòng thử lại.",
+				variant: "destructive",
+			});
 		} finally {
 			setSubmitting(false);
 		}
@@ -351,7 +390,7 @@ export function SongForm({ mode, songId, onSaved }: SongFormProps) {
 		return (
 			<Card className="mt-5 rounded-2xl border-border/60 bg-card/80 shadow-sm">
 				<CardContent className="py-10">
-					<p className="text-sm text-muted-foreground">Dang tai du lieu bai hat...</p>
+					<p className="text-sm text-muted-foreground">Đang tải dữ liệu bài hát...</p>
 				</CardContent>
 			</Card>
 		);
@@ -360,7 +399,7 @@ export function SongForm({ mode, songId, onSaved }: SongFormProps) {
 	return (
 		<Card className="mt-5 rounded-2xl border-border/60 bg-card/80 shadow-sm">
 			<CardHeader>
-				<CardTitle>{isEditMode ? "Chinh sua bai hat" : "Them bai hat moi"}</CardTitle>
+				<CardTitle>{isEditMode ? "Chỉnh sửa bài hát" : "Thêm bài hát mới"}</CardTitle>
 			</CardHeader>
 			<CardContent>
 				<form className="space-y-5" onSubmit={handleSubmit}>
@@ -437,14 +476,14 @@ export function SongForm({ mode, songId, onSaved }: SongFormProps) {
 					{!isEditMode && (
 						<div className="space-y-2 rounded-xl border border-border/60 bg-background/60 p-4">
 							<label className="text-sm font-medium" htmlFor="raw-input">
-								Dan text tho de backend chuan hoa tu dong
+								Dán lời bài hát và nốt ở đây để format tự động:
 							</label>
 							<textarea
 								id="raw-input"
 								value={rawInput}
 								onChange={(event) => setRawInput(event.target.value)}
 								rows={10}
-								placeholder="Dan toan bo cam am/text tho vao day..."
+								placeholder="Dán toàn bộ lời bài hát và nốt ở đây..."
 								className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm outline-none ring-offset-background transition-colors placeholder:text-muted-foreground focus-visible:ring-2 focus-visible:ring-ring"
 							/>
 							<div className="flex justify-end">
@@ -457,10 +496,10 @@ export function SongForm({ mode, songId, onSaved }: SongFormProps) {
 									{normalizing ? (
 										<>
 											<Loader2 className="h-4 w-4 animate-spin" />
-											Dang chuan hoa...
+											Đang format...
 										</>
 									) : (
-										"Chuan hoa va dien vao form"
+										"Format"
 									)}
 								</Button>
 							</div>
@@ -468,7 +507,7 @@ export function SongForm({ mode, songId, onSaved }: SongFormProps) {
 					)}
 
 					<div className="space-y-4">
-						<div className="flex items-center justify-between">
+						<div className="flex items-center justify-between gap-2">
 							<h2 className="text-base font-semibold sm:text-lg">Các đoạn trong bài hát</h2>
 							<Button type="button" variant="outline" size="sm" onClick={addSection}>
 								<Plus className="h-4 w-4" />
@@ -480,16 +519,16 @@ export function SongForm({ mode, songId, onSaved }: SongFormProps) {
 							<Card key={sectionIndex} className="rounded-xl border-border/60 bg-background/70">
 								<CardHeader className="pb-3">
 									<div className="flex items-center justify-between gap-2">
-										<CardTitle className="text-sm sm:text-base">Section {sectionIndex + 1}</CardTitle>
+										<CardTitle className="text-sm sm:text-base">Đoạn {sectionIndex + 1}</CardTitle>
 										{sections.length > 1 && (
 											<Button
 												type="button"
 												variant="ghost"
 												size="icon-sm"
 												onClick={() => removeSection(sectionIndex)}
-												aria-label="Xoa section"
+												aria-label="Xóa đoạn nhạc này"
 											>
-												<Trash2 className="h-4 w-4" />
+												<Trash2 className="h-3.5 w-3.5" />
 											</Button>
 										)}
 									</div>
@@ -497,7 +536,7 @@ export function SongForm({ mode, songId, onSaved }: SongFormProps) {
 								<CardContent className="space-y-4">
 									<div className="space-y-2">
 										<label className="text-sm font-medium" htmlFor={`section-title-${sectionIndex}`}>
-											Ten section
+											Tên đoạn nhạc:
 										</label>
 										<Input
 											id={`section-title-${sectionIndex}`}
@@ -505,7 +544,7 @@ export function SongForm({ mode, songId, onSaved }: SongFormProps) {
 											onChange={(event) =>
 												updateSectionTitle(sectionIndex, event.target.value)
 											}
-											placeholder="VD: Verse 1"
+											placeholder="VD: Đoạn 1"
 										/>
 									</div>
 
@@ -514,18 +553,18 @@ export function SongForm({ mode, songId, onSaved }: SongFormProps) {
 											<div key={lineIndex} className="rounded-lg border border-border/60 p-3">
 												<div className="mb-2 flex items-center justify-between">
 													<p className="text-xs font-medium text-muted-foreground">
-														Dong {lineIndex + 1}
+														Dòng {lineIndex + 1}
 													</p>
 													{section.lines.length > 1 && (
 														<Button
 															type="button"
-															variant="ghost"
-															size="icon-xs"
-															onClick={() => removeLine(sectionIndex, lineIndex)}
-															aria-label="Xoa dong"
-														>
-															<Trash2 className="h-3.5 w-3.5" />
-														</Button>
+																variant="ghost"
+																size="icon-xs"
+																onClick={() => removeLine(sectionIndex, lineIndex)}
+																aria-label="Xóa dòng"
+															>
+																<Trash2 className="h-3.5 w-3.5" />
+															</Button>
 													)}
 												</div>
 												<div className="grid gap-2 sm:grid-cols-2">
@@ -534,14 +573,14 @@ export function SongForm({ mode, songId, onSaved }: SongFormProps) {
 														onChange={(event) =>
 															updateLine(sectionIndex, lineIndex, "notes", event.target.value)
 														}
-														placeholder="Notes"
+														placeholder="Nốt"
 													/>
 													<Input
 														value={line.lyric}
 														onChange={(event) =>
 															updateLine(sectionIndex, lineIndex, "lyric", event.target.value)
 														}
-														placeholder="Lyric"
+														placeholder="Lời bài hát"
 													/>
 												</div>
 											</div>
@@ -554,7 +593,7 @@ export function SongForm({ mode, songId, onSaved }: SongFormProps) {
 											onClick={() => addLine(sectionIndex)}
 										>
 											<Plus className="h-4 w-4" />
-											Them dong
+											Thêm dòng mới
 										</Button>
 									</div>
 								</CardContent>
@@ -562,16 +601,13 @@ export function SongForm({ mode, songId, onSaved }: SongFormProps) {
 						))}
 					</div>
 
-					{error && <p className="text-sm font-medium text-destructive">{error}</p>}
-					{message && <p className="text-sm font-medium text-emerald-600">{message}</p>}
-
 					<Button type="submit" disabled={submitting} className="gap-2">
 						<Save className="h-4 w-4" />
 						{submitting
-							? "Dang luu..."
+							? "Đang lưu..."
 							: isEditMode
-								? "Cap nhat bai hat"
-								: "Luu bai hat"}
+								? "Cập nhật bài hát"
+								: "Lưu bài hát mới"}
 					</Button>
 				</form>
 			</CardContent>

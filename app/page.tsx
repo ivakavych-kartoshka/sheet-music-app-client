@@ -266,11 +266,10 @@ export default function Home() {
                     key={category}
                     type="button"
                     onClick={() => setSelectedCategory(category)}
-                    className={`rounded-lg border px-3 py-1.5 text-xs transition-colors sm:text-sm ${
-                      isActive
+                    className={`rounded-lg border px-3 py-1.5 text-xs transition-colors sm:text-sm ${isActive
                         ? "border-foreground/40 bg-foreground text-background"
                         : "border-border/70 bg-background/70 text-muted-foreground hover:border-foreground/20 hover:text-foreground"
-                    }`}
+                      }`}
                   >
                     {category}
                   </button>

@@ -207,7 +207,7 @@ export default async function SongDetail({ params }: Props) {
               ))}
             </div>
           ) : (
-            <p className="mt-6 text-muted-foreground">No data available</p>
+            <p className="mt-6 text-muted-foreground">Không có lời bài hát</p>
           )}
         </section>
       </main>
