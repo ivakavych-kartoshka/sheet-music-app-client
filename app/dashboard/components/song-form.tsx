@@ -10,6 +10,7 @@ import {
 	normalizeSong,
 	updateSong,
 	uploadAudioFile,
+	uploadSheetFiles,
 } from "@/app/lib/api";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -46,12 +47,14 @@ export function SongForm({ mode, songId, onSaved }: SongFormProps) {
 	const [title, setTitle] = useState("");
 	const [category, setCategory] = useState("");
 	const [audioUrl, setAudioUrl] = useState("");
+	const [sheetUrls, setSheetUrls] = useState<string[]>([]);
 	const [rawInput, setRawInput] = useState("");
 	const [sections, setSections] = useState<SongSectionForm[]>([
 		createEmptySection(),
 	]);
 	const [loadingSong, setLoadingSong] = useState(isEditMode);
 	const [uploadingAudio, setUploadingAudio] = useState(false);
+	const [uploadingSheet, setUploadingSheet] = useState(false);
 	const [normalizing, setNormalizing] = useState(false);
 	const [submitting, setSubmitting] = useState(false);
 	const { toast } = useToast();
@@ -60,6 +63,7 @@ export function SongForm({ mode, songId, onSaved }: SongFormProps) {
 		setTitle("");
 		setCategory("");
 		setAudioUrl("");
+		setSheetUrls([]);
 		setRawInput("");
 		setSections([createEmptySection()]);
 	};
@@ -68,6 +72,13 @@ export function SongForm({ mode, songId, onSaved }: SongFormProps) {
 		setTitle(payload.title?.trim() || "");
 		setCategory(payload.category?.trim() || "");
 		setAudioUrl(payload.audioUrl?.trim() || "");
+		setSheetUrls(
+			payload.sheetUrls && payload.sheetUrls.length > 0
+				? payload.sheetUrls.map((item) => item.trim()).filter(Boolean)
+				: payload.sheetUrl?.trim()
+					? [payload.sheetUrl.trim()]
+					: [],
+		);
 		setSections(
 			payload.sections && payload.sections.length > 0
 				? payload.sections.map((section) => ({
@@ -103,6 +114,13 @@ export function SongForm({ mode, songId, onSaved }: SongFormProps) {
 				setTitle(song.title?.trim() || "");
 				setCategory(song.category?.trim() || "");
 				setAudioUrl(song.audioUrl?.trim() || "");
+				setSheetUrls(
+					song.sheetUrls && song.sheetUrls.length > 0
+						? song.sheetUrls.map((item) => item.trim()).filter(Boolean)
+						: song.sheetUrl?.trim()
+							? [song.sheetUrl.trim()]
+							: [],
+				);
 				setSections(
 					song.sections && song.sections.length > 0
 						? song.sections.map((section) => ({
@@ -182,6 +200,62 @@ export function SongForm({ mode, songId, onSaved }: SongFormProps) {
 			});
 		} finally {
 			setUploadingAudio(false);
+			event.target.value = "";
+		}
+	};
+
+	const handleUploadSheet = async (
+		event: React.ChangeEvent<HTMLInputElement>,
+	) => {
+		const selectedFiles = event.target.files ? Array.from(event.target.files) : [];
+
+		if (selectedFiles.length === 0) {
+			return;
+		}
+
+		const acceptedTypes = ["image/png", "image/jpeg", "application/pdf"];
+		const isSupported = selectedFiles.every((file) => {
+			const lowerName = file.name.toLowerCase();
+			return (
+				acceptedTypes.includes(file.type) ||
+				lowerName.endsWith(".png") ||
+				lowerName.endsWith(".jpg") ||
+				lowerName.endsWith(".jpeg") ||
+				lowerName.endsWith(".pdf")
+			);
+		});
+
+		if (!isSupported) {
+			toast({
+				title: "Lỗi",
+				description: "Chỉ hỗ trợ file png, jpg, jpeg hoặc pdf.",
+				variant: "destructive",
+			});
+			event.target.value = "";
+			return;
+		}
+
+		try {
+			setUploadingSheet(true);
+			const result = await uploadSheetFiles(selectedFiles);
+
+			if (!result.sheetUrls || result.sheetUrls.length === 0) {
+				throw new Error("Upload failed");
+			}
+
+			setSheetUrls((prev) => [...prev, ...result.sheetUrls!]);
+			toast({
+				title: "Thành công",
+				description: `Upload ${result.sheetUrls.length} sheet nhạc thành công.`,
+			});
+		} catch {
+			toast({
+				title: "Lỗi",
+				description: "Upload sheet nhạc thất bại.",
+				variant: "destructive",
+			});
+		} finally {
+			setUploadingSheet(false);
 			event.target.value = "";
 		}
 	};
@@ -329,6 +403,8 @@ export function SongForm({ mode, songId, onSaved }: SongFormProps) {
 			title: title.trim(),
 			category: category.trim(),
 			audioUrl: audioUrl.trim() || undefined,
+			sheetUrl: sheetUrls[0] || undefined,
+			sheetUrls: sheetUrls.length > 0 ? sheetUrls : undefined,
 			sections: normalizedSections.length > 0 ? normalizedSections : [],
 		};
 	};
@@ -471,6 +547,68 @@ export function SongForm({ mode, songId, onSaved }: SongFormProps) {
 								)}
 							</Button>
 						</div>
+					</div>
+
+					<div className="space-y-2 rounded-xl border border-border/60 bg-background/60 p-4">
+						<label className="text-sm font-medium" htmlFor="sheet-file">
+							Tải sheet nhạc từ máy (nhiều file png, jpg, pdf)
+						</label>
+						<div className="flex flex-col gap-2 sm:flex-row sm:items-center">
+							<Input
+								id="sheet-file"
+								type="file"
+								multiple
+								accept="image/png,image/jpeg,application/pdf,.png,.jpg,.jpeg,.pdf"
+								onChange={handleUploadSheet}
+								disabled={uploadingSheet}
+							/>
+							<Button
+								type="button"
+								variant="outline"
+								disabled={uploadingSheet}
+								className="gap-2 sm:w-auto"
+							>
+								{uploadingSheet ? (
+									<>
+										<Loader2 className="h-4 w-4 animate-spin" />
+										Đang tải...
+									</>
+								) : (
+									<>
+										<Upload className="h-4 w-4" />
+										Sheet file
+									</>
+								)}
+							</Button>
+						</div>
+						{sheetUrls.length > 0 ? (
+							<div className="space-y-2">
+								<p className="text-xs text-muted-foreground">
+									Đã có {sheetUrls.length} sheet:
+								</p>
+								<div className="space-y-1">
+									{sheetUrls.map((url, index) => (
+										<div
+											key={`${url}-${index}`}
+											className="flex items-center justify-between gap-2 rounded-lg border border-border/60 bg-background/70 px-2 py-1.5 text-xs"
+										>
+											<span className="truncate">Sheet {index + 1}: {url}</span>
+											<Button
+												type="button"
+												variant="ghost"
+												size="icon-xs"
+												onClick={() =>
+													setSheetUrls((prev) => prev.filter((_, i) => i !== index))
+												}
+												aria-label="Xóa sheet"
+											>
+												<Trash2 className="h-3.5 w-3.5" />
+											</Button>
+										</div>
+									))}
+								</div>
+							</div>
+						) : null}
 					</div>
 
 					{!isEditMode && (

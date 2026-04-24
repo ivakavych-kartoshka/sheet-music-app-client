@@ -1,9 +1,11 @@
 import Link from "next/link";
-import { ArrowLeft, ExternalLink, Music2 } from "lucide-react";
+import { ArrowLeft, Music2 } from "lucide-react";
 import type { SongDetailData } from "@/app/lib/api";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import AudioPlayer from "./audio-player";
+import SheetViewer from "./sheet-viewer";
 
 type SongError = {
   response?: {
@@ -79,12 +81,15 @@ export default async function SongDetail({ params }: Props) {
   try {
     const song = await getSong(id);
 
-    const fallbackBeatUrl = "https://www.youtube.com/watch?v=Fl933Iu7phA";
-    const beatUrl = song?.audioUrl?.trim() || fallbackBeatUrl;
+    const beatUrl = song?.audioUrl?.trim() || "";
+    const sheetSources =
+      song?.sheetUrls?.map((url) => url?.trim()).filter(Boolean) ||
+      (song?.sheetUrl?.trim() ? [song.sheetUrl.trim()] : []);
 
     const youtubeId = isYouTubeUrl(beatUrl) ? getYouTubeId(beatUrl) : null;
 
     const canPlayDirect = canPlayAudioDirectly(beatUrl);
+    const hasPlayableMedia = Boolean(youtubeId) || canPlayDirect;
 
     return (
       <main className="relative min-h-screen overflow-hidden bg-background text-foreground">
@@ -120,47 +125,51 @@ export default async function SongDetail({ params }: Props) {
 
               {/* PLAYER */}
               <div className="space-y-3">
-                {/* YOUTUBE */}
-                {youtubeId ? (
-                  <div className="rounded-xl border border-border/70 bg-background/70 p-3">
-                    <p className="mb-2 text-sm text-muted-foreground">
-                      Beat YouTube:
-                    </p>
-
-                    <div className="aspect-video w-full overflow-hidden rounded-lg">
-                      <iframe
-                        className="h-full w-full"
-                        src={`https://www.youtube.com/embed/${youtubeId}`}
-                        title="YouTube player"
-                        allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-                        allowFullScreen
-                      />
+                {hasPlayableMedia ? (
+                  youtubeId ? (
+                    <div className="overflow-hidden rounded-2xl border border-border/70 bg-card shadow-md">
+                      <div className="aspect-video w-full overflow-hidden">
+                        <iframe
+                          className="h-full w-full"
+                          src={`https://www.youtube.com/embed/${youtubeId}`}
+                          title="YouTube player"
+                          allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                          allowFullScreen
+                        />
+                      </div>
                     </div>
-                  </div>
-                ) : canPlayDirect ? (
-                  /* AUDIO */
-                  <div className="rounded-xl border border-border/70 bg-background/70 p-3">
-                    <p className="mb-2 text-sm text-muted-foreground">Audio:</p>
-                    <audio controls className="w-full">
-                      <source src={beatUrl} />
-                    </audio>
-                  </div>
+                  ) : (
+                    <AudioPlayer src={beatUrl} />
+                  )
                 ) : (
                   <p className="text-sm text-muted-foreground">
-                    Link không hỗ trợ phát trực tiếp.
+                    Chưa có link YouTube hoặc audio để phát.
                   </p>
                 )}
-
-                {/* OPEN LINK */}
-                <Button
-                  asChild
-                  variant="secondary"
-                  className="gap-2 rounded-xl"
-                >
-                </Button>
               </div>
             </CardHeader>
           </Card>
+
+          {sheetSources.length > 0 ? (
+            <Card className="mt-6 rounded-3xl border-border/60 bg-card/80 shadow-lg backdrop-blur-md">
+              <CardHeader className="pb-3">
+                <CardTitle className="text-xl sm:text-2xl">
+                  Sheet Nhạc ({sheetSources.length} trang)
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-3">
+                <SheetViewer
+                  sheetSources={sheetSources}
+                  songTitle={song?.title?.trim() || "Untitled"}
+                  songSlug={id}
+                />
+              </CardContent>
+            </Card>
+          ) : (
+            <p className="mt-6 text-sm text-muted-foreground">
+              Chưa có sheet nhạc.
+            </p>
+          )}
 
           {/* CONTENT */}
           {song?.sections?.length ? (

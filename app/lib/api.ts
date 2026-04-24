@@ -30,6 +30,8 @@ export type SongDetailData = {
   slug?: string;
   category?: string;
   audioUrl?: string;
+  sheetUrl?: string;
+  sheetUrls?: string[];
   sections?: SongSection[];
 };
 
@@ -63,6 +65,8 @@ export type CreateSongInput = {
   category: string;
   sections: CreateSongSectionInput[];
   audioUrl?: string;
+  sheetUrl?: string;
+  sheetUrls?: string[];
   images?: string[];
 };
 
@@ -145,6 +149,24 @@ export const uploadAudioFile = async (file: File) => {
   const formData = new FormData();
   formData.append("file", file);
   const response = await API.post<{ audioUrl?: string }>("/songs/upload-audio", formData);
+
+  return response.data;
+};
+
+export const uploadSheetFile = async (file: File) => {
+  const formData = new FormData();
+  formData.append("file", file);
+  const response = await API.post<{ sheetUrl?: string }>("/songs/upload-sheet", formData);
+
+  return response.data;
+};
+
+export const uploadSheetFiles = async (files: File[]) => {
+  const formData = new FormData();
+  for (const file of files) {
+    formData.append("files", file);
+  }
+  const response = await API.post<{ sheetUrls?: string[] }>("/songs/upload-sheets", formData);
 
   return response.data;
 };
