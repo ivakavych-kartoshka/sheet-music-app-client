@@ -39,8 +39,17 @@ export default function AudioPlayer({ src }: AudioPlayerProps) {
   return (
     <div className="overflow-hidden rounded-2xl border border-border/70 bg-card shadow-md">
       <div className="space-y-4 p-4">
-        <audio ref={audioRef} controls className="w-full" preload="metadata">
-          <source src={src} />
+        <audio 
+          ref={audioRef} 
+          controls 
+          className="w-full mobile-optimized" 
+          preload="metadata"
+          playsInline
+          crossOrigin="anonymous"
+        >
+          <source src={src} type="audio/mpeg" />
+          <source src={src} type="audio/wav" />
+          <source src={src} type="audio/ogg" />
         </audio>
 
         <div className="grid gap-4 sm:grid-cols-2">

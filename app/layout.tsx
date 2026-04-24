@@ -33,6 +33,8 @@ export default function RootLayout({
         <meta name="mobile-web-app-capable" content="yes" />
         <meta name="format-detection" content="telephone=no" />
         <meta name="msapplication-tap-highlight" content="no" />
+        <meta http-equiv="Content-Disposition" content="inline" />
+        <meta name="referrer" content="no-referrer-when-downgrade" />
         <title>Thư Viện FTC</title>
         <meta name="description" content="Thư viện nhạc FTC - Kho nhạc chất lượng cao" />
         <link rel="icon" href="/favicon.ico" />

@@ -33,6 +33,60 @@ const nextConfig: NextConfig = {
           },
         ],
       },
+      // Headers cho PDF files - hiển thị trực tiếp trên mobile
+      {
+        source: '/api/(.*).pdf',
+        headers: [
+          {
+            key: 'Content-Type',
+            value: 'application/pdf',
+          },
+          {
+            key: 'Content-Disposition',
+            value: 'inline',
+          },
+          {
+            key: 'Cache-Control',
+            value: 'public, max-age=31536000, immutable',
+          },
+        ],
+      },
+      // Headers cho audio files - hiển thị trực tiếp
+      {
+        source: '/api/(.*).(mp3|wav|ogg|m4a)',
+        headers: [
+          {
+            key: 'Content-Type',
+            value: 'audio/mpeg',
+          },
+          {
+            key: 'Content-Disposition',
+            value: 'inline',
+          },
+          {
+            key: 'Accept-Ranges',
+            value: 'bytes',
+          },
+        ],
+      },
+      // Headers cho image files
+      {
+        source: '/api/(.*).(jpg|jpeg|png|gif|webp|avif)',
+        headers: [
+          {
+            key: 'Content-Type',
+            value: 'image/jpeg',
+          },
+          {
+            key: 'Content-Disposition',
+            value: 'inline',
+          },
+          {
+            key: 'Cache-Control',
+            value: 'public, max-age=31536000, immutable',
+          },
+        ],
+      },
     ];
   },
   

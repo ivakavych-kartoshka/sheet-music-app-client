@@ -46,15 +46,20 @@ export default function SheetViewer({
           </div>
           {isPdfUrl(sheetUrl) ? (
             <iframe
-              src={sheetUrl}
+              src={`${sheetUrl}#view=FitV&toolbar=0&navpanes=0&scrollbar=0`}
               title={`Sheet PDF ${index + 1}`}
-              className="h-[70vh] w-full"
+              className="h-[70vh] w-full border-0 mobile-optimized"
+              loading="lazy"
+              allow="autoplay; fullscreen"
+              allowFullScreen
             />
           ) : (
             <img
               src={sheetUrl}
               alt={`Sheet nhac ${index + 1} - ${songTitle}`}
-              className="h-auto w-full object-contain"
+              className="h-auto w-full object-contain mobile-optimized"
+              loading="lazy"
+              decoding="async"
             />
           )}
         </div>
