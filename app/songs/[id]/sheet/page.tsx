@@ -70,16 +70,16 @@ export default async function SheetPage({ params, searchParams }: Props) {
 
   return (
     <main className="min-h-screen bg-black text-white">
-      <div className="sticky top-0 z-10 flex items-center justify-between gap-2 bg-black/80 px-3 py-2 backdrop-blur-sm">
+      <div className="sticky top-0 z-10 flex items-center justify-between gap-2 bg-black/80 px-3 py-2 backdrop-blur-sm border-b border-white/10">
         <div className="flex items-center gap-2">
-          <Button asChild variant="secondary" size="sm" className="gap-1">
+          <Button asChild variant="secondary" size="sm" className="gap-1 rounded-lg">
             <Link href={`/songs/${id}`}>
               <ArrowLeft className="h-4 w-4" />
               Quay lại bài hát
             </Link>
           </Button>
-          <p className="text-sm">
-            {song?.title?.trim() || "Untitled"} - Trang {currentIndex + 1}/
+          <p className="text-sm text-white/70">
+            {song?.title?.trim() || "Untitled"} — Trang {currentIndex + 1}/
             {sheetSources.length}
           </p>
         </div>
@@ -90,6 +90,7 @@ export default async function SheetPage({ params, searchParams }: Props) {
             variant="secondary"
             size="icon"
             disabled={currentIndex === 0}
+            className="rounded-lg"
           >
             <Link href={`/songs/${id}/sheet?page=${currentIndex}`}>
               <ChevronLeft className="h-4 w-4" />
@@ -100,6 +101,7 @@ export default async function SheetPage({ params, searchParams }: Props) {
             variant="secondary"
             size="icon"
             disabled={currentIndex >= sheetSources.length - 1}
+            className="rounded-lg"
           >
             <Link href={`/songs/${id}/sheet?page=${currentIndex + 2}`}>
               <ChevronRight className="h-4 w-4" />

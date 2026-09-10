@@ -7,17 +7,17 @@ import {
   Music2,
   ArrowUpRight,
   Library,
-  Moon,
-  Sun,
   ArrowUp,
-  LayoutDashboard,
+  Disc3,
 } from "lucide-react";
-import { useTheme } from "next-themes";
 import { getSongCategories, getSongs, type SongListItem } from "./lib/api";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
+import { Skeleton } from "@/components/ui/skeleton";
+import FavoriteButton from "@/components/favorite-button";
+import SiteHeader from "@/components/site-header";
 import {
   Pagination,
   PaginationContent,
@@ -27,28 +27,31 @@ import {
   PaginationPrevious,
 } from "@/components/ui/pagination";
 
-function LoadingCard() {
+function LoadingCard({ index }: { index: number }) {
   return (
-    <Card className="h-full overflow-hidden border-border/60 bg-card/60 backdrop-blur">
-      <CardHeader className="space-y-3 pb-2">
-        <div className="h-5 w-1/3 animate-pulse rounded bg-muted/70" />
-        <div className="h-5 w-3/4 animate-pulse rounded bg-muted/70" />
-      </CardHeader>
-      <CardContent>
-        <div className="h-4 w-1/3 animate-pulse rounded bg-muted/70" />
-      </CardContent>
-    </Card>
+    <div
+      className="h-full rounded-2xl border border-border/30 bg-card/50 glass p-5 space-y-4 animate-fade-in"
+      style={{ animationDelay: `${index * 80}ms` }}
+    >
+      <div className="flex items-center justify-between">
+        <Skeleton className="h-5 w-20 rounded-lg" />
+        <Skeleton className="h-8 w-8 rounded-lg" />
+      </div>
+      <Skeleton className="h-5 w-3/4 rounded-lg" />
+      <div className="flex items-center gap-2 pt-1">
+        <Skeleton className="h-3 w-3 rounded" />
+        <Skeleton className="h-3 w-24 rounded" />
+      </div>
+    </div>
   );
 }
 
 export default function Home() {
   const ITEMS_PER_PAGE = 9;
-  const { resolvedTheme, setTheme } = useTheme();
   const [songs, setSongs] = useState<SongListItem[]>([]);
   const [categories, setCategories] = useState<string[]>(["Tất cả"]);
   const [keyword, setKeyword] = useState("");
   const [debouncedKeyword, setDebouncedKeyword] = useState("");
-  const [isThemeMounted, setIsThemeMounted] = useState(false);
   const [selectedCategory, setSelectedCategory] = useState("Tất cả");
   const [currentPage, setCurrentPage] = useState(1);
   const [totalSongs, setTotalSongs] = useState(0);
@@ -59,10 +62,6 @@ export default function Home() {
   const handleBackToTop = () => {
     window.scrollTo({ top: 0, behavior: "smooth" });
   };
-
-  useEffect(() => {
-    setIsThemeMounted(true);
-  }, []);
 
   useEffect(() => {
     const timeout = setTimeout(() => {
@@ -183,146 +182,143 @@ export default function Home() {
 
     return pages;
   }, [currentPage, totalPages]);
-
   return (
     <main className="relative min-h-screen overflow-hidden bg-background text-foreground">
+      <SiteHeader />
+
+      {/* Ambient background orbs */}
       <div className="pointer-events-none absolute inset-0">
-        <div className="absolute -left-20 top-0 h-[24rem] w-[24rem] rounded-full bg-amber-300/12 blur-3xl" />
-        <div className="absolute -right-24 top-32 h-[22rem] w-[22rem] rounded-full bg-sky-300/10 blur-3xl" />
-        <div className="absolute bottom-0 left-1/2 h-[18rem] w-[32rem] -translate-x-1/2 rounded-full bg-emerald-200/8 blur-3xl" />
+        <div className="absolute -left-32 -top-32 h-[32rem] w-[32rem] rounded-full bg-primary/6 blur-[120px] animate-float" />
+        <div className="absolute -right-24 top-1/4 h-[26rem] w-[26rem] rounded-full bg-chart-2/5 blur-[100px]" />
+        <div className="absolute bottom-0 left-1/3 h-[22rem] w-[30rem] -translate-x-1/2 rounded-full bg-chart-3/4 blur-[100px]" />
       </div>
 
       <section className="relative mx-auto w-full max-w-7xl px-4 pb-12 pt-8 sm:px-6 sm:pb-16 sm:pt-10 lg:px-8">
-        <header className="rounded-3xl border border-border/60 bg-card/70 p-5 shadow-sm backdrop-blur-md sm:p-8">
-          <div className="flex flex-col gap-6 lg:flex-row lg:items-end lg:justify-between">
-            <div className="max-w-2xl">
-              <h1 className="text-balance text-3xl font-semibold tracking-tight sm:text-4xl lg:text-5xl">
-                THƯ VIỆN FTC
-              </h1>
-            </div>
-
-            <div className="grid grid-cols-2 gap-3 sm:flex sm:flex-wrap sm:justify-end">
-              <Badge
-                variant="outline"
-                className="h-auto justify-start gap-2 rounded-xl px-3 py-2 text-xs sm:text-sm"
-              >
-                <Library className="h-3.5 w-3.5" />
-                {totalSongs} bài nhạc
-              </Badge>
-              <div className="inline-flex items-center gap-1 rounded-xl border border-border/70 bg-background/80 p-1">
-                <Button
-                  type="button"
-                  variant={
-                    isThemeMounted && resolvedTheme === "light"
-                      ? "secondary"
-                      : "ghost"
-                  }
-                  size="sm"
-                  className="rounded-lg"
-                  onClick={() => setTheme("light")}
-                >
-                  <Sun className="h-3.5 w-3.5" />
-                  Light
-                </Button>
-                <Button
-                  type="button"
-                  variant={
-                    isThemeMounted && resolvedTheme === "dark"
-                      ? "secondary"
-                      : "ghost"
-                  }
-                  size="sm"
-                  className="rounded-lg"
-                  onClick={() => setTheme("dark")}
-                >
-                  <Moon className="h-3.5 w-3.5" />
-                  Dark
-                </Button>
+        {/* Hero Header */}
+        <header className="overflow-hidden rounded-3xl border border-border/30 bg-card/50 shadow-sm glass animate-fade-in hero-gradient">
+          <div className="p-6 sm:p-8 lg:p-10">
+            <div className="flex flex-col gap-6 lg:flex-row lg:items-end lg:justify-between">
+              <div className="max-w-2xl">
+                <div className="flex items-center gap-3 mb-4">
+                  <div className="flex items-center justify-center w-11 h-11 rounded-2xl bg-primary/10 border border-primary/15">
+                    <Disc3 className="h-5 w-5 text-primary" />
+                  </div>
+                  <Badge
+                    variant="secondary"
+                    className="rounded-full px-3 py-1 text-xs font-medium bg-primary/8 text-primary border-primary/10"
+                  >
+                    <Library className="h-3 w-3 mr-1.5" />
+                    {totalSongs} bài nhạc
+                  </Badge>
+                </div>
+                <h1 className="text-balance text-3xl font-bold tracking-tight sm:text-4xl lg:text-5xl">
+                  <span className="text-gradient">Thư Viện</span>{" "}
+                  <span className="text-foreground">FTC</span>
+                </h1>
+                <p className="mt-3 text-muted-foreground text-sm sm:text-base leading-relaxed">
+                  Kho nhạc của clb FTC — tìm kiếm, nghe và luyện tập mọi lúc mọi nơi
+                </p>
               </div>
             </div>
-          </div>
 
-          <div className="mt-6">
-            <label htmlFor="song-search" className="sr-only">
-              Tìm kiếm bài hát
-            </label>
-            <div className="group relative">
-              <Search className="pointer-events-none absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground transition-colors group-focus-within:text-foreground" />
-              <Input
-                id="song-search"
-                placeholder="Tìm theo tên bài hát..."
-                value={keyword}
-                onChange={(event) => setKeyword(event.target.value)}
-                className="h-11 rounded-xl border-border/70 bg-background/80 pl-11 text-sm sm:h-12 sm:text-base"
-              />
-            </div>
+            {/* Search */}
+            <div className="mt-6">
+              <label htmlFor="song-search" className="sr-only">
+                Tìm kiếm bài hát
+              </label>
+              <div className="group relative">
+                <Search className="pointer-events-none absolute left-4 top-1/2 h-4.5 w-4.5 -translate-y-1/2 text-muted-foreground transition-colors duration-200 group-focus-within:text-primary" />
+                <Input
+                  id="song-search"
+                  placeholder="Tìm theo tên bài hát..."
+                  value={keyword}
+                  onChange={(event) => setKeyword(event.target.value)}
+                  className="h-12 rounded-2xl border-border/40 bg-background/60 pl-12 pr-4 text-sm sm:text-base focus:border-primary/40 focus:ring-2 focus:ring-primary/15 input-glow transition-all duration-200"
+                />
+              </div>
 
-            <div className="mt-4 flex flex-wrap gap-2">
-              {categories.map((category) => {
-                const isActive = selectedCategory === category;
+              {/* Category filters */}
+              <div className="mt-4 flex flex-wrap gap-2">
+                {categories.map((category) => {
+                  const isActive = selectedCategory === category;
 
-                return (
-                  <button
-                    key={category}
-                    type="button"
-                    onClick={() => setSelectedCategory(category)}
-                    className={`rounded-lg border px-3 py-1.5 text-xs transition-colors sm:text-sm ${isActive
-                        ? "border-foreground/40 bg-foreground text-background"
-                        : "border-border/70 bg-background/70 text-muted-foreground hover:border-foreground/20 hover:text-foreground"
+                  return (
+                    <button
+                      key={category}
+                      type="button"
+                      onClick={() => setSelectedCategory(category)}
+                      className={`rounded-xl border px-4 py-1.5 text-xs font-medium transition-all duration-250 sm:text-sm ${
+                        isActive
+                          ? "border-primary/40 bg-primary text-primary-foreground shadow-md shadow-primary/15 btn-primary-glow"
+                          : "border-border/40 bg-background/50 text-muted-foreground hover:border-primary/25 hover:text-foreground hover:bg-background/70 hover:shadow-sm"
                       }`}
-                  >
-                    {category}
-                  </button>
-                );
-              })}
+                    >
+                      {category}
+                    </button>
+                  );
+                })}
+              </div>
             </div>
           </div>
         </header>
 
+        {/* Content */}
         <div className="mt-8 sm:mt-10">
           {loading ? (
             <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 sm:gap-5 lg:grid-cols-3">
               {Array.from({ length: 6 }).map((_, index) => (
-                <LoadingCard key={index} />
+                <LoadingCard key={index} index={index} />
               ))}
             </div>
           ) : songs.length === 0 ? (
-            <section className="rounded-3xl border border-dashed border-border/80 bg-card/40 p-8 text-center backdrop-blur sm:p-12">
-              <Music2 className="mx-auto h-10 w-10 text-muted-foreground" />
-              <h2 className="mt-4 text-xl font-semibold sm:text-2xl">
+            <section className="rounded-3xl border border-dashed border-border/50 bg-card/20 p-8 text-center backdrop-blur-sm sm:p-16 animate-fade-in">
+              <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-2xl bg-muted/40 mb-5">
+                <Music2 className="h-8 w-8 text-muted-foreground/50" />
+              </div>
+              <h2 className="text-xl font-semibold sm:text-2xl">
                 Không tìm thấy bài hát
               </h2>
-              <p className="mt-2 text-sm text-muted-foreground sm:text-base">
-                Thử lại từ khóa hoặc kiểm tra tên bài hát khác.
+              <p className="mt-2 text-sm text-muted-foreground sm:text-base max-w-md mx-auto leading-relaxed">
+                Thử từ khóa khác hoặc kiểm tra danh mục để khám phá thêm bài
+                hát.
               </p>
             </section>
           ) : (
             <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 sm:gap-5 lg:grid-cols-3">
-              {songs.map((song) => (
+              {songs.map((song, index) => (
                 <Link
                   key={song._id}
                   href={`/songs/${song.slug}`}
                   prefetch={false}
-                  className="group block"
+                  className="group block animate-slide-up"
+                  style={{ animationDelay: `${index * 60}ms` }}
                 >
-                  <Card className="h-full rounded-2xl border-border/60 bg-card/75 transition-transform duration-300 hover:-translate-y-1 hover:border-foreground/25 hover:shadow-lg">
-                    <CardHeader className="pb-2">
-                      <div className="mb-1">
+                  <Card className="h-full rounded-2xl border-border/30 bg-card/60 transition-all duration-300 hover:-translate-y-1.5 hover:border-primary/25 hover:shadow-xl hover:shadow-primary/5 glass card-glow hover:card-glow-hover group-hover:bg-card/80">
+                    <CardHeader className="pb-3">
+                      <div className="flex items-center justify-between mb-2">
                         <Badge
                           variant="secondary"
-                          className="rounded-lg px-2 py-1 text-[11px]"
+                          className="rounded-lg px-2.5 py-1 text-[11px] font-medium bg-primary/8 text-primary border-primary/8"
                         >
-                          {song.category?.trim() || "Uncategorized"}
+                          {song.category?.trim() || "Chưa phân loại"}
                         </Badge>
+                        <div className="flex items-center gap-1">
+                          <FavoriteButton songId={song._id} compact />
+                          <div className="flex h-8 w-8 items-center justify-center rounded-lg text-muted-foreground transition-all duration-300 group-hover:bg-primary/10 group-hover:text-primary">
+                            <ArrowUpRight className="h-4 w-4 transition-transform duration-300 group-hover:translate-x-0.5 group-hover:-translate-y-0.5" />
+                          </div>
+                        </div>
                       </div>
-                      <CardTitle className="line-clamp-2 text-base font-semibold sm:text-lg">
+                      <CardTitle className="line-clamp-2 text-base font-semibold sm:text-lg leading-snug group-hover:text-primary transition-colors duration-200">
                         {song.title}
                       </CardTitle>
                     </CardHeader>
 
-                    <CardContent className="flex items-center justify-between text-sm text-muted-foreground">
-                      <span>Xem chi tiết</span>
-                      <ArrowUpRight className="h-4 w-4 transition-transform duration-200 group-hover:translate-x-0.5 group-hover:-translate-y-0.5" />
+                    <CardContent className="pt-0">
+                      <div className="flex items-center gap-2 text-xs text-muted-foreground/70 group-hover:text-muted-foreground transition-colors duration-200">
+                        <Music2 className="h-3 w-3" />
+                        <span>Nhấn để xem chi tiết</span>
+                      </div>
                     </CardContent>
                   </Card>
                 </Link>
@@ -330,109 +326,114 @@ export default function Home() {
             </div>
           )}
 
+          {/* Pagination */}
           {!loading && songs.length > 0 && (
-            <Pagination className="mt-6 sm:mt-8">
-              <PaginationContent>
-                <PaginationItem>
-                  <PaginationPrevious
-                    href="#"
-                    text="Trước"
-                    onClick={(event) => {
-                      event.preventDefault();
-                      if (currentPage > 1) {
-                        setCurrentPage((prev) => prev - 1);
+            <div className="mt-8 sm:mt-10 flex justify-center">
+              <Pagination>
+                <PaginationContent>
+                  <PaginationItem>
+                    <PaginationPrevious
+                      href="#"
+                      text="Trước"
+                      onClick={(event) => {
+                        event.preventDefault();
+                        if (currentPage > 1) {
+                          setCurrentPage((prev) => prev - 1);
+                        }
+                      }}
+                      className={
+                        currentPage === 1 ? "pointer-events-none opacity-50" : ""
                       }
-                    }}
-                    className={
-                      currentPage === 1 ? "pointer-events-none opacity-50" : ""
-                    }
-                  />
-                </PaginationItem>
+                    />
+                  </PaginationItem>
 
-                {visiblePages.map((page) => {
-                  if (typeof page !== "number") {
+                  {visiblePages.map((page) => {
+                    if (typeof page !== "number") {
+                      return (
+                        <PaginationItem key={page}>
+                          <span className="px-3 py-2 text-sm text-muted-foreground">
+                            ...
+                          </span>
+                        </PaginationItem>
+                      );
+                    }
+
                     return (
                       <PaginationItem key={page}>
-                        <span className="px-3 py-2 text-sm text-muted-foreground">
-                          ...
-                        </span>
+                        <PaginationLink
+                          href="#"
+                          isActive={page === currentPage}
+                          onClick={(event) => {
+                            event.preventDefault();
+                            setCurrentPage(page);
+                          }}
+                        >
+                          {page}
+                        </PaginationLink>
                       </PaginationItem>
                     );
-                  }
+                  })}
 
-                  return (
-                    <PaginationItem key={page}>
-                      <PaginationLink
-                        href="#"
-                        isActive={page === currentPage}
-                        onClick={(event) => {
-                          event.preventDefault();
-                          setCurrentPage(page);
-                        }}
-                      >
-                        {page}
-                      </PaginationLink>
-                    </PaginationItem>
-                  );
-                })}
-
-                <PaginationItem>
-                  <PaginationNext
-                    href="#"
-                    text="Sau"
-                    onClick={(event) => {
-                      event.preventDefault();
-                      if (currentPage < totalPages) {
-                        setCurrentPage((prev) => prev + 1);
+                  <PaginationItem>
+                    <PaginationNext
+                      href="#"
+                      text="Sau"
+                      onClick={(event) => {
+                        event.preventDefault();
+                        if (currentPage < totalPages) {
+                          setCurrentPage((prev) => prev + 1);
+                        }
+                      }}
+                      className={
+                        currentPage === totalPages
+                          ? "pointer-events-none opacity-50"
+                          : ""
                       }
-                    }}
-                    className={
-                      currentPage === totalPages
-                        ? "pointer-events-none opacity-50"
-                        : ""
-                    }
-                  />
-                </PaginationItem>
-              </PaginationContent>
-            </Pagination>
+                    />
+                  </PaginationItem>
+                </PaginationContent>
+              </Pagination>
+            </div>
           )}
         </div>
       </section>
 
-      <footer className="relative border-t border-border/60 bg-card/40 backdrop-blur">
-        <div className="mx-auto w-full max-w-7xl px-4 py-5 text-muted-foreground sm:px-6 sm:py-6 lg:px-8">
-          <div className="flex flex-col items-center gap-3 text-center md:flex-row md:items-center md:justify-between md:text-left">
-            <p className="text-xs leading-relaxed sm:text-sm">
-              © {new Date().getFullYear()} THƯ VIỆN FTC. Bảo lưu mọi quyền.
-            </p>
-            <div className="flex w-full flex-col items-center gap-2 sm:w-auto sm:flex-row sm:justify-end">
-              <p className="text-xs sm:text-sm">
+      {/* Footer */}
+      <footer className="relative border-t border-border/30 bg-card/20 glass-strong">
+        <div className="mx-auto w-full max-w-7xl px-4 py-6 sm:px-6 lg:px-8">
+          <div className="flex flex-col items-center gap-4 text-center md:flex-row md:items-center md:justify-between md:text-left">
+            <div>
+              <p className="text-sm font-medium text-foreground">
+                © {new Date().getFullYear()} Thư Viện FTC
+              </p>
+              <p className="text-xs text-muted-foreground mt-0.5">
                 Được xây dựng bởi Phạm Khả Vy.
               </p>
-              <Button
-                type="button"
-                variant="outline"
-                size="sm"
-                className="w-full rounded-lg sm:w-auto"
-                onClick={handleBackToTop}
-              >
-                <ArrowUp className="h-3.5 w-3.5" />
-                Lên đầu trang
-              </Button>
             </div>
+            <Button
+              type="button"
+              variant="ghost"
+              size="sm"
+              className="gap-2 rounded-xl text-muted-foreground hover:text-foreground"
+              onClick={handleBackToTop}
+            >
+              <ArrowUp className="h-4 w-4" />
+              Lên đầu trang
+            </Button>
           </div>
         </div>
       </footer>
 
+      {/* Floating back-to-top */}
       {showBackToTop && (
         <Button
           type="button"
           size="icon"
-          className="fixed bottom-5 right-5 z-20 rounded-full shadow-lg"
+          className="fixed bottom-6 right-6 z-20 h-12 w-12 rounded-2xl shadow-lg shadow-primary/25 bg-primary text-primary-foreground hover:bg-primary/90 hover:shadow-xl hover:shadow-primary/30 transition-all duration-300 animate-scale-in btn-primary-glow"
           onClick={handleBackToTop}
           aria-label="Back to top"
         >
-          <ArrowUp className="h-4 w-4" />
+          <ArrowUp className="h-5 w-5" />
         </Button>
       )}
     </main>

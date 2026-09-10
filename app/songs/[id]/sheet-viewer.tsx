@@ -33,11 +33,11 @@ export default function SheetViewer({
       {sheetSources.map((sheetUrl, index) => (
         <div
           key={`${sheetUrl}-${index}`}
-          className="space-y-2 overflow-hidden rounded-2xl border border-border/70 bg-background p-2"
+          className="space-y-2 overflow-hidden rounded-2xl border border-border/40 bg-background/60 p-2"
         >
           <div className="flex items-center justify-between">
             <p className="text-xs text-muted-foreground">Trang sheet {index + 1}</p>
-            <Button asChild type="button" variant="outline" size="sm" className="gap-1">
+            <Button asChild type="button" variant="outline" size="sm" className="gap-1 rounded-lg border-border/40 hover:bg-primary/5 hover:border-primary/20 transition-all duration-200">
               <Link href={`/songs/${songSlug}/sheet?page=${index + 1}`}>
                 <Expand className="h-3.5 w-3.5" />
                 Fullscreen
@@ -48,7 +48,7 @@ export default function SheetViewer({
             <iframe
               src={`${sheetUrl}#view=FitV&toolbar=0&navpanes=0&scrollbar=0`}
               title={`Sheet PDF ${index + 1}`}
-              className="h-[70vh] w-full border-0 mobile-optimized"
+              className="h-[70vh] w-full border-0 mobile-optimized rounded-xl"
               loading="lazy"
               allow="autoplay; fullscreen"
               allowFullScreen
@@ -57,7 +57,7 @@ export default function SheetViewer({
             <img
               src={sheetUrl}
               alt={`Sheet nhac ${index + 1} - ${songTitle}`}
-              className="h-auto w-full object-contain mobile-optimized"
+              className="h-auto w-full object-contain mobile-optimized rounded-xl"
               loading="lazy"
               decoding="async"
             />

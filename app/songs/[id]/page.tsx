@@ -1,11 +1,13 @@
 import Link from "next/link";
-import { ArrowLeft, Music2 } from "lucide-react";
+import { ArrowLeft, Music2, BookOpen } from "lucide-react";
 import type { SongDetailData } from "@/app/lib/api";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import AudioPlayer from "./audio-player";
 import SheetViewer from "./sheet-viewer";
+import FavoriteButton from "@/components/favorite-button";
+import SiteHeader from "@/components/site-header";
 
 type SongError = {
   response?: {
@@ -16,8 +18,6 @@ type SongError = {
   };
   message?: string;
 };
-
-// ================= HELPERS =================
 
 async function getSong(slug: string): Promise<SongDetailData> {
   const backendUrl = process.env.NEXT_PUBLIC_API_URL;
@@ -67,11 +67,9 @@ function getYouTubeId(url: string): string | null {
   }
 }
 
-// ================= PAGE =================
-
 interface Props {
   params: Promise<{
-    id: string; // This is now the slug, not the ID
+    id: string;
   }>;
 }
 
@@ -87,47 +85,48 @@ export default async function SongDetail({ params }: Props) {
       (song?.sheetUrl?.trim() ? [song.sheetUrl.trim()] : []);
 
     const youtubeId = isYouTubeUrl(beatUrl) ? getYouTubeId(beatUrl) : null;
-
     const canPlayDirect = canPlayAudioDirectly(beatUrl);
     const hasPlayableMedia = Boolean(youtubeId) || canPlayDirect;
 
     return (
       <main className="relative min-h-screen overflow-hidden bg-background text-foreground">
-        {/* Background */}
+        <SiteHeader />
         <div className="pointer-events-none absolute inset-0">
-          <div className="absolute -left-20 top-0 h-[22rem] w-[22rem] rounded-full bg-amber-300/12 blur-3xl" />
-          <div className="absolute -right-20 top-28 h-[22rem] w-[22rem] rounded-full bg-sky-300/10 blur-3xl" />
-          <div className="absolute bottom-0 left-1/2 h-[16rem] w-[30rem] -translate-x-1/2 rounded-full bg-emerald-200/8 blur-3xl" />
+          <div className="absolute -left-32 -top-32 h-[32rem] w-[32rem] rounded-full bg-primary/6 blur-[120px] animate-float" />
+          <div className="absolute -right-24 top-1/4 h-[22rem] w-[22rem] rounded-full bg-chart-2/5 blur-[100px]" />
         </div>
 
         <section className="relative mx-auto w-full max-w-5xl px-4 pb-12 pt-8 sm:px-6 sm:pb-16 sm:pt-10 lg:px-8">
           {/* Back */}
           <Link href="/" className="inline-block">
-            <Button variant="outline" className="gap-2 rounded-xl">
-              <ArrowLeft className="h-4 w-4" />
+            <Button variant="ghost" className="gap-2 rounded-xl text-muted-foreground hover:text-foreground transition-colors duration-200 group">
+              <ArrowLeft className="h-4 w-4 transition-transform duration-200 group-hover:-translate-x-0.5" />
               Quay lại
             </Button>
           </Link>
 
-          {/* HEADER */}
-          <Card className="mt-5 rounded-3xl border-border/60 bg-card/75 shadow-sm backdrop-blur-md sm:mt-6">
+          {/* Header Card */}
+          <Card className="mt-5 rounded-3xl border-border/30 bg-card/50 shadow-sm glass card-glow hero-gradient sm:mt-6 overflow-hidden animate-fade-in">
             <CardHeader className="gap-4 pb-4">
-              <Badge
-                variant="outline"
-                className="w-fit rounded-xl px-3 py-1 text-xs sm:text-sm"
-              >
-                {song?.category?.trim() || "Uncategorized"}
-              </Badge>
+              <div className="flex items-center gap-2">
+                <Badge
+                  variant="secondary"
+                  className="rounded-lg px-2.5 py-1 text-xs font-medium bg-primary/8 text-primary border-primary/8"
+                >
+                  {song?.category?.trim() || "Chưa phân loại"}
+                </Badge>
+                <div className="flex-1" />
+                <FavoriteButton songId={song?._id} />
+              </div>
 
-              <CardTitle className="text-2xl font-semibold sm:text-3xl lg:text-4xl">
+              <CardTitle className="text-2xl font-bold tracking-tight sm:text-3xl lg:text-4xl">
                 {song?.title?.trim() || "Untitled"}
               </CardTitle>
 
-              {/* PLAYER */}
               <div className="space-y-3">
                 {hasPlayableMedia ? (
                   youtubeId ? (
-                    <div className="overflow-hidden rounded-2xl border border-border/70 bg-card shadow-md">
+                    <div className="overflow-hidden rounded-2xl border border-border/30 bg-card shadow-md">
                       <div className="aspect-video w-full overflow-hidden">
                         <iframe
                           className="h-full w-full"
@@ -142,20 +141,30 @@ export default async function SongDetail({ params }: Props) {
                     <AudioPlayer src={beatUrl} />
                   )
                 ) : (
-                  <p className="text-sm text-muted-foreground">
-                    Chưa có link YouTube hoặc audio để phát.
-                  </p>
+                  <div className="flex items-center gap-2 rounded-xl border border-border/30 bg-muted/20 p-3 text-sm text-muted-foreground">
+                    <Music2 className="h-4 w-4" />
+                    Chưa có link YouTube hoặc audio để phát
+                  </div>
                 )}
               </div>
             </CardHeader>
           </Card>
 
+          {/* Sheet */}
           {sheetSources.length > 0 ? (
-            <Card className="mt-6 rounded-3xl border-border/60 bg-card/80 shadow-lg backdrop-blur-md">
+            <Card className="mt-6 rounded-3xl border-border/30 bg-card/50 shadow-sm glass card-glow animate-slide-up" style={{ animationDelay: "100ms" }}>
               <CardHeader className="pb-3">
-                <CardTitle className="text-xl sm:text-2xl">
-                  Sheet Nhạc ({sheetSources.length} trang)
-                </CardTitle>
+                <div className="flex items-center gap-2">
+                  <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary/8">
+                    <BookOpen className="h-4 w-4 text-primary" />
+                  </div>
+                  <CardTitle className="text-lg sm:text-xl">
+                    Sheet Nhạc
+                  </CardTitle>
+                  <Badge variant="secondary" className="rounded-lg text-xs bg-primary/8 text-primary border-primary/8">
+                    {sheetSources.length} trang
+                  </Badge>
+                </div>
               </CardHeader>
               <CardContent className="space-y-3">
                 <SheetViewer
@@ -166,48 +175,54 @@ export default async function SongDetail({ params }: Props) {
               </CardContent>
             </Card>
           ) : (
-            <p className="mt-6 text-sm text-muted-foreground">
-              Chưa có sheet nhạc.
-            </p>
+            <div className="mt-6 flex items-center gap-2 rounded-xl border border-border/30 bg-muted/20 p-3 text-sm text-muted-foreground">
+              <BookOpen className="h-4 w-4" />
+              Chưa có sheet nhạc
+            </div>
           )}
 
-          {/* CONTENT */}
+          {/* Lyrics / Notes */}
           {song?.sections?.length ? (
-            <div className="mt-6 space-y-4">
+            <div className="mt-6 space-y-3 animate-slide-up" style={{ animationDelay: "200ms" }}>
+              <div className="flex items-center gap-2 mb-2">
+                <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-primary/8">
+                  <Music2 className="h-4 w-4 text-primary" />
+                </div>
+                <h2 className="text-lg font-semibold">Lời bài hát & Nốt</h2>
+              </div>
+
               {song.sections.map((section, index) => (
-                <Card key={index} className="rounded-2xl">
-                  <CardHeader>
-                    <CardTitle>
+                <Card key={index} className="rounded-2xl border-border/30 bg-card/50 glass card-glow">
+                  <CardHeader className="pb-2">
+                    <CardTitle className="text-sm font-semibold uppercase tracking-wider text-primary">
                       {section.title || `Section ${index + 1}`}
                     </CardTitle>
                   </CardHeader>
 
-                  <CardContent className="space-y-3">
+                  <CardContent className="space-y-2">
                     {section.lines && section.lines.length > 0 ? (
                       section.lines.map((line, i) => (
                         <div
                           key={i}
-                          className="p-4 border rounded-xl bg-background/80 shadow-sm"
+                          className="flex items-start gap-3 rounded-xl border border-border/25 bg-background/40 p-3.5 transition-colors hover:bg-muted/20"
                         >
-                          <div className="flex items-start gap-2">
-                            <Music2 className="w-4 h-4 mt-1 text-primary" />
-
-                            <div className="flex-1">
-                              <p className="font-bold text-base">
-                                {line.notes?.trim() || "No notes"}
+                          <div className="flex h-6 w-6 shrink-0 items-center justify-center rounded-md bg-primary/8 mt-0.5">
+                            <Music2 className="h-3 w-3 text-primary" />
+                          </div>
+                          <div className="flex-1 min-w-0">
+                            <p className="font-semibold text-sm leading-relaxed text-foreground">
+                              {line.notes?.trim() || "—"}
+                            </p>
+                            {line.lyric?.trim() && (
+                              <p className="text-sm text-muted-foreground mt-1 leading-relaxed">
+                                {line.lyric.trim()}
                               </p>
-
-                              {line.lyric?.trim() && (
-                                <p className="text-sm text-muted-foreground mt-2">
-                                  {line.lyric.trim()}
-                                </p>
-                              )}
-                            </div>
+                            )}
                           </div>
                         </div>
                       ))
                     ) : (
-                      <p className="text-sm text-muted-foreground py-4">
+                      <p className="text-sm text-muted-foreground py-4 text-center">
                         Không có dữ liệu
                       </p>
                     )}
@@ -216,7 +231,10 @@ export default async function SongDetail({ params }: Props) {
               ))}
             </div>
           ) : (
-            <p className="mt-6 text-muted-foreground">Không có lời bài hát</p>
+            <div className="mt-6 flex items-center gap-2 rounded-xl border border-border/30 bg-muted/20 p-3 text-sm text-muted-foreground">
+              <Music2 className="h-4 w-4" />
+              Chưa có lời bài hát
+            </div>
           )}
         </section>
       </main>
@@ -225,13 +243,21 @@ export default async function SongDetail({ params }: Props) {
     const typedError = error as SongError;
 
     return (
-      <main className="flex items-center justify-center min-h-screen">
-        <Card className="p-6">
-          <CardTitle>Error loading song</CardTitle>
-          <p>{typedError.message}</p>
-
+      <main className="relative min-h-screen flex items-center justify-center bg-background text-foreground">
+        <div className="pointer-events-none absolute inset-0">
+          <div className="absolute -left-32 -top-32 h-[32rem] w-[32rem] rounded-full bg-primary/6 blur-[120px]" />
+        </div>
+        <Card className="relative z-10 p-8 text-center rounded-3xl border-border/30 bg-card/60 glass card-glow max-w-md animate-scale-in">
+          <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-2xl bg-destructive/10 mb-4">
+            <Music2 className="h-7 w-7 text-destructive" />
+          </div>
+          <CardTitle className="text-lg font-semibold mb-2">Không thể tải bài hát</CardTitle>
+          <p className="text-sm text-muted-foreground mb-6">{typedError.message}</p>
           <Link href="/">
-            <Button className="mt-4">Back</Button>
+            <Button className="rounded-xl btn-primary-glow">
+              <ArrowLeft className="h-4 w-4 mr-1" />
+              Quay lại trang chủ
+            </Button>
           </Link>
         </Card>
       </main>

@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { Loader2, Plus, Save, Trash2, Upload } from "lucide-react";
+import { Loader2, Plus, Save, Trash2, Upload, Music2, FileText, Mic } from "lucide-react";
 import {
 	createSong,
 	getSongById,
@@ -15,7 +15,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
-import { cn } from "@/lib/utils";
+import { Skeleton } from "@/components/ui/skeleton";
 import { useToast } from "@/hooks/use-toast";
 
 type SongLineForm = {
@@ -166,7 +166,7 @@ export function SongForm({ mode, songId, onSaved }: SongFormProps) {
 
 		const isMp3 =
 			selectedFile.type === "audio/mpeg" ||
-			selectedFile.name.toLowerCase().endsWith(".mp3");
+			selectedFile.name.toLowerCase().endsWith('.mp3');
 
 		if (!isMp3) {
 			toast({
@@ -323,7 +323,6 @@ export function SongForm({ mode, songId, onSaved }: SongFormProps) {
 		);
 	};
 
-	
 	const handleNormalizeFromRawText = async () => {
 		if (isEditMode) {
 			return;
@@ -464,217 +463,298 @@ export function SongForm({ mode, songId, onSaved }: SongFormProps) {
 
 	if (loadingSong) {
 		return (
-			<Card className="mt-5 rounded-2xl border-border/60 bg-card/80 shadow-sm">
-				<CardContent className="py-10">
-					<p className="text-sm text-muted-foreground">Đang tải dữ liệu bài hát...</p>
+			<Card className="mt-5 rounded-2xl border-border/30 bg-card/50 glass card-glow shadow-sm animate-fade-in">
+				<CardContent className="p-5 sm:p-6 space-y-6">
+					{/* Basic info skeleton */}
+					<div className="space-y-3">
+						<div className="flex items-center gap-2 mb-1">
+							<Skeleton className="h-6 w-6 rounded-md" />
+							<Skeleton className="h-4 w-32 rounded" />
+						</div>
+						<div className="grid gap-3 sm:grid-cols-2">
+							<Skeleton className="h-10 w-full rounded-xl" />
+							<Skeleton className="h-10 w-full rounded-xl" />
+						</div>
+					</div>
+					{/* Audio skeleton */}
+					<div className="space-y-3">
+						<div className="flex items-center gap-2 mb-1">
+							<Skeleton className="h-6 w-6 rounded-md" />
+							<Skeleton className="h-4 w-24 rounded" />
+						</div>
+						<Skeleton className="h-10 w-full rounded-xl" />
+						<Skeleton className="h-20 w-full rounded-xl" />
+					</div>
+					{/* Sheet skeleton */}
+					<div className="space-y-3">
+						<div className="flex items-center gap-2 mb-1">
+							<Skeleton className="h-6 w-6 rounded-md" />
+							<Skeleton className="h-4 w-20 rounded" />
+						</div>
+						<Skeleton className="h-20 w-full rounded-xl" />
+					</div>
+					{/* Submit skeleton */}
+					<Skeleton className="h-10 w-36 rounded-xl" />
 				</CardContent>
 			</Card>
 		);
 	}
 
 	return (
-		<Card className="mt-5 rounded-2xl border-border/60 bg-card/80 shadow-sm">
-			<CardHeader>
-				<CardTitle>{isEditMode ? "Chỉnh sửa bài hát" : "Thêm bài hát mới"}</CardTitle>
-			</CardHeader>
-			<CardContent>
-				<form className="space-y-5" onSubmit={handleSubmit}>
-					<div className="grid gap-3 sm:grid-cols-2">
-						<div className="space-y-2">
-							<label className="text-sm font-medium" htmlFor="title">
-								Tiêu đề
-							</label>
-							<Input
-								id="title"
-								value={title}
-								onChange={(event) => setTitle(event.target.value)}
-								placeholder="Nhập tiêu đề bài hát"
-							/>
-						</div>
-						<div className="space-y-2">
-							<label className="text-sm font-medium" htmlFor="category">
-								Thể loại
-							</label>
-							<Input
-								id="category"
-								value={category}
-								onChange={(event) => setCategory(event.target.value)}
-								placeholder="VD: Dân Ca, Nhạc Trẻ, ...."
-							/>
-						</div>
-					</div>
-
-					<div className="space-y-2">
-						<label className="text-sm font-medium" htmlFor="audio-url">
-							Link beat (link Youtube nếu có hoặc link mp3 đã upload)
-						</label>
-						<Input
-							id="audio-url"
-							value={audioUrl}
-							onChange={(event) => setAudioUrl(event.target.value)}
-							placeholder="https://..."
-						/>
-					</div>
-
-					<div className="space-y-2 rounded-xl border border-border/60 bg-background/60 p-4">
-						<label className="text-sm font-medium" htmlFor="audio-file">
-							Tải beat từ máy (chỉ nhận file mp3)
-						</label>
-						<div className="flex flex-col gap-2 sm:flex-row sm:items-center">
-							<Input
-								id="audio-file"
-								type="file"
-								accept="audio/mpeg,.mp3"
-								onChange={handleUploadAudio}
-								disabled={uploadingAudio}
-							/>
-							<Button
-								type="button"
-								variant="outline"
-								disabled={uploadingAudio}
-								className="gap-2 sm:w-auto"
-							>
-								{uploadingAudio ? (
-									<>
-										<Loader2 className="h-4 w-4 animate-spin" />
-										Đang tải...
-									</>
-								) : (
-									<>
-										<Upload className="h-4 w-4" />
-										MP3 only
-									</>
-								)}
-							</Button>
-						</div>
-					</div>
-
-					<div className="space-y-2 rounded-xl border border-border/60 bg-background/60 p-4">
-						<label className="text-sm font-medium" htmlFor="sheet-file">
-							Tải sheet nhạc từ máy (nhiều file png, jpg, pdf)
-						</label>
-						<div className="flex flex-col gap-2 sm:flex-row sm:items-center">
-							<Input
-								id="sheet-file"
-								type="file"
-								multiple
-								accept="image/png,image/jpeg,application/pdf,.png,.jpg,.jpeg,.pdf"
-								onChange={handleUploadSheet}
-								disabled={uploadingSheet}
-							/>
-							<Button
-								type="button"
-								variant="outline"
-								disabled={uploadingSheet}
-								className="gap-2 sm:w-auto"
-							>
-								{uploadingSheet ? (
-									<>
-										<Loader2 className="h-4 w-4 animate-spin" />
-										Đang tải...
-									</>
-								) : (
-									<>
-										<Upload className="h-4 w-4" />
-										Sheet file
-									</>
-								)}
-							</Button>
-						</div>
-						{sheetUrls.length > 0 ? (
-							<div className="space-y-2">
-								<p className="text-xs text-muted-foreground">
-									Đã có {sheetUrls.length} sheet:
-								</p>
-								<div className="space-y-1">
-									{sheetUrls.map((url, index) => (
-										<div
-											key={`${url}-${index}`}
-											className="flex items-center justify-between gap-2 rounded-lg border border-border/60 bg-background/70 px-2 py-1.5 text-xs"
-										>
-											<span className="truncate">Sheet {index + 1}: {url}</span>
-											<Button
-												type="button"
-												variant="ghost"
-												size="icon-xs"
-												onClick={() =>
-													setSheetUrls((prev) => prev.filter((_, i) => i !== index))
-												}
-												aria-label="Xóa sheet"
-											>
-												<Trash2 className="h-3.5 w-3.5" />
-											</Button>
-										</div>
-									))}
-								</div>
+		<Card className="mt-5 rounded-2xl border-border/30 bg-card/50 glass card-glow shadow-sm animate-slide-up">
+			<CardContent className="p-5 sm:p-6">
+				<form className="space-y-6" onSubmit={handleSubmit}>
+					{/* Basic Info */}
+					<div className="space-y-3">
+						<div className="flex items-center gap-2 mb-1">
+							<div className="flex h-6 w-6 items-center justify-center rounded-md bg-primary/8">
+								<Music2 className="h-3 w-3 text-primary" />
 							</div>
-						) : null}
+							<h3 className="text-sm font-semibold text-foreground">Thông tin cơ bản</h3>
+						</div>
+						<div className="grid gap-3 sm:grid-cols-2">
+							<div className="space-y-1.5">
+								<label className="text-xs font-medium text-muted-foreground" htmlFor="title">
+									Tiêu đề *
+								</label>
+								<Input
+									id="title"
+									value={title}
+									onChange={(event) => setTitle(event.target.value)}
+									placeholder="Nhập tiêu đề bài hát"
+									className="rounded-xl border-border/40 bg-background/50 focus:border-primary/40 focus:ring-2 focus:ring-primary/15 input-glow transition-all duration-200"
+								/>
+							</div>
+							<div className="space-y-1.5">
+								<label className="text-xs font-medium text-muted-foreground" htmlFor="category">
+									Thể loại *
+								</label>
+								<Input
+									id="category"
+									value={category}
+									onChange={(event) => setCategory(event.target.value)}
+									placeholder="VD: Dân Ca, Nhạc Trẻ..."
+									className="rounded-xl border-border/40 bg-background/50 focus:border-primary/40 focus:ring-2 focus:ring-primary/15 input-glow transition-all duration-200"
+								/>
+							</div>
+						</div>
 					</div>
 
-					{!isEditMode && (
-						<div className="space-y-2 rounded-xl border border-border/60 bg-background/60 p-4">
-							<label className="text-sm font-medium" htmlFor="raw-input">
-								Dán lời bài hát và nốt ở đây để format tự động:
+					{/* Audio */}
+					<div className="space-y-3">
+						<div className="flex items-center gap-2 mb-1">
+							<div className="flex h-6 w-6 items-center justify-center rounded-md bg-primary/8">
+								<Mic className="h-3 w-3 text-primary" />
+							</div>
+							<h3 className="text-sm font-semibold text-foreground">Beat / Audio</h3>
+						</div>
+
+						<div className="space-y-1.5">
+							<label className="text-xs font-medium text-muted-foreground" htmlFor="audio-url">
+								Link beat (YouTube hoặc link mp3 đã upload)
 							</label>
-							<textarea
-								id="raw-input"
-								value={rawInput}
-								onChange={(event) => setRawInput(event.target.value)}
-								rows={10}
-								placeholder="Dán toàn bộ lời bài hát và nốt ở đây..."
-								className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm outline-none ring-offset-background transition-colors placeholder:text-muted-foreground focus-visible:ring-2 focus-visible:ring-ring"
+							<Input
+								id="audio-url"
+								value={audioUrl}
+								onChange={(event) => setAudioUrl(event.target.value)}
+								placeholder="https://..."
+								className="rounded-xl border-border/40 bg-background/50 focus:border-primary/40 focus:ring-2 focus:ring-primary/15 input-glow transition-all duration-200"
 							/>
-							<div className="flex justify-end">
+						</div>
+
+						<div className="rounded-xl border border-border/25 bg-muted/15 p-4 space-y-2">
+							<label className="text-xs font-medium text-muted-foreground" htmlFor="audio-file">
+								Tải beat từ máy (chỉ nhận file mp3)
+							</label>
+							<div className="flex flex-col gap-2 sm:flex-row sm:items-center">
+								<Input
+									id="audio-file"
+									type="file"
+									accept="audio/mpeg,.mp3"
+									onChange={handleUploadAudio}
+									disabled={uploadingAudio}
+									className="rounded-xl border-border/40 bg-background/50"
+								/>
 								<Button
 									type="button"
 									variant="outline"
-									onClick={handleNormalizeFromRawText}
-									disabled={normalizing || submitting}
+									disabled={uploadingAudio}
+									className="gap-2 sm:w-auto shrink-0 rounded-xl border-border/40 hover:bg-primary/5 hover:border-primary/20 transition-all duration-200"
 								>
-									{normalizing ? (
+									{uploadingAudio ? (
 										<>
 											<Loader2 className="h-4 w-4 animate-spin" />
-											Đang format...
+											Đang tải...
 										</>
 									) : (
-										"Format"
+										<>
+											<Upload className="h-4 w-4" />
+											Upload
+										</>
 									)}
 								</Button>
 							</div>
 						</div>
+					</div>
+
+					{/* Sheets */}
+					<div className="space-y-3">
+						<div className="flex items-center gap-2 mb-1">
+							<div className="flex h-6 w-6 items-center justify-center rounded-md bg-primary/8">
+								<FileText className="h-3 w-3 text-primary" />
+							</div>
+							<h3 className="text-sm font-semibold text-foreground">Sheet Nhạc</h3>
+						</div>
+
+						<div className="rounded-xl border border-border/25 bg-muted/15 p-4 space-y-2">
+							<label className="text-xs font-medium text-muted-foreground" htmlFor="sheet-file">
+								Tải sheet nhạc từ máy (nhiều file png, jpg, pdf)
+							</label>
+							<div className="flex flex-col gap-2 sm:flex-row sm:items-center">
+								<Input
+									id="sheet-file"
+									type="file"
+									multiple
+									accept="image/png,image/jpeg,application/pdf,.png,.jpg,.jpeg,.pdf"
+									onChange={handleUploadSheet}
+									disabled={uploadingSheet}
+									className="rounded-xl border-border/40 bg-background/50"
+								/>
+								<Button
+									type="button"
+									variant="outline"
+									disabled={uploadingSheet}
+									className="gap-2 sm:w-auto shrink-0 rounded-xl border-border/40 hover:bg-primary/5 hover:border-primary/20 transition-all duration-200"
+								>
+									{uploadingSheet ? (
+										<>
+											<Loader2 className="h-4 w-4 animate-spin" />
+											Đang tải...
+										</>
+									) : (
+										<>
+											<Upload className="h-4 w-4" />
+											Upload
+										</>
+									)}
+								</Button>
+							</div>
+							{sheetUrls.length > 0 && (
+								<div className="space-y-2 mt-2">
+									<p className="text-xs text-muted-foreground">
+										Đã có {sheetUrls.length} sheet:
+									</p>
+									<div className="space-y-1">
+										{sheetUrls.map((url, index) => (
+											<div
+												key={`${url}-${index}`}
+												className="flex items-center justify-between gap-2 rounded-lg border border-border/25 bg-background/40 px-3 py-2 text-xs transition-colors hover:bg-muted/15"
+											>
+												<span className="truncate text-muted-foreground">Sheet {index + 1}</span>
+												<Button
+													type="button"
+													variant="ghost"
+													size="icon-xs"
+													onClick={() =>
+														setSheetUrls((prev) => prev.filter((_, i) => i !== index))
+													}
+													aria-label="Xóa sheet"
+													className="text-destructive hover:bg-destructive/10 transition-colors duration-200"
+												>
+													<Trash2 className="h-3.5 w-3.5" />
+												</Button>
+											</div>
+										))}
+									</div>
+								</div>
+							)}
+						</div>
+					</div>
+
+					{/* Raw Text Normalizer */}
+					{!isEditMode && (
+						<div className="space-y-3">
+							<div className="flex items-center gap-2 mb-1">
+								<div className="flex h-6 w-6 items-center justify-center rounded-md bg-primary/8">
+									<FileText className="h-3 w-3 text-primary" />
+								</div>
+								<h3 className="text-sm font-semibold text-foreground">Format Tự Động</h3>
+							</div>
+
+							<div className="rounded-xl border border-border/25 bg-muted/15 p-4 space-y-3">
+								<label className="text-xs font-medium text-muted-foreground" htmlFor="raw-input">
+									Dán lời bài hát và nốt ở đây để format tự động
+								</label>
+								<textarea
+									id="raw-input"
+									value={rawInput}
+									onChange={(event) => setRawInput(event.target.value)}
+									rows={8}
+									placeholder="Dán toàn bộ lời bài hát và nốt ở đây..."
+									className="w-full rounded-xl border border-border/40 bg-background/50 px-3.5 py-2.5 text-sm outline-none transition-all duration-200 placeholder:text-muted-foreground focus:ring-2 focus:ring-primary/15 focus:border-primary/40 input-glow"
+								/>
+								<div className="flex justify-end">
+									<Button
+										type="button"
+										variant="outline"
+										onClick={handleNormalizeFromRawText}
+										disabled={normalizing || submitting}
+										className="gap-2 rounded-xl border-border/40 hover:bg-primary/5 hover:border-primary/20 transition-all duration-200"
+									>
+										{normalizing ? (
+											<>
+												<Loader2 className="h-4 w-4 animate-spin" />
+												Đang format...
+											</>
+										) : (
+											"Format"
+										)}
+									</Button>
+								</div>
+							</div>
+						</div>
 					)}
 
-					<div className="space-y-4">
-						<div className="flex items-center justify-between gap-2">
-							<h2 className="text-base font-semibold sm:text-lg">Các đoạn trong bài hát</h2>
-							<Button type="button" variant="outline" size="sm" onClick={addSection}>
-								<Plus className="h-4 w-4" />
-								Thêm đoạn mới
+					{/* Sections */}
+					<div className="space-y-3">
+						<div className="flex items-center justify-between gap-2 mb-1">
+							<div className="flex items-center gap-2">
+								<div className="flex h-6 w-6 items-center justify-center rounded-md bg-primary/8">
+									<Music2 className="h-3 w-3 text-primary" />
+								</div>
+								<h3 className="text-sm font-semibold text-foreground">Các đoạn trong bài hát</h3>
+							</div>
+							<Button type="button" variant="outline" size="sm" onClick={addSection} className="gap-1.5 rounded-lg border-border/40 hover:bg-primary/5 hover:border-primary/20 transition-all duration-200">
+								<Plus className="h-3.5 w-3.5" />
+								Thêm đoạn
 							</Button>
 						</div>
 
 						{sections.map((section, sectionIndex) => (
-							<Card key={sectionIndex} className="rounded-xl border-border/60 bg-background/70">
-								<CardHeader className="pb-3">
+							<Card key={sectionIndex} className="rounded-xl border-border/25 bg-muted/10">
+								<CardHeader className="pb-2 pt-4 px-4">
 									<div className="flex items-center justify-between gap-2">
-										<CardTitle className="text-sm sm:text-base">Đoạn {sectionIndex + 1}</CardTitle>
+										<CardTitle className="text-sm font-medium text-muted-foreground">
+											Đoạn {sectionIndex + 1}
+										</CardTitle>
 										{sections.length > 1 && (
 											<Button
 												type="button"
 												variant="ghost"
-												size="icon-sm"
+												size="icon-xs"
 												onClick={() => removeSection(sectionIndex)}
 												aria-label="Xóa đoạn nhạc này"
+												className="text-destructive hover:bg-destructive/10 transition-colors duration-200"
 											>
 												<Trash2 className="h-3.5 w-3.5" />
 											</Button>
 										)}
 									</div>
 								</CardHeader>
-								<CardContent className="space-y-4">
-									<div className="space-y-2">
-										<label className="text-sm font-medium" htmlFor={`section-title-${sectionIndex}`}>
-											Tên đoạn nhạc:
+								<CardContent className="space-y-3 px-4 pb-4">
+									<div className="space-y-1.5">
+										<label className="text-xs font-medium text-muted-foreground" htmlFor={`section-title-${sectionIndex}`}>
+											Tên đoạn nhạc
 										</label>
 										<Input
 											id={`section-title-${sectionIndex}`}
@@ -682,27 +762,29 @@ export function SongForm({ mode, songId, onSaved }: SongFormProps) {
 											onChange={(event) =>
 												updateSectionTitle(sectionIndex, event.target.value)
 											}
-											placeholder="VD: Đoạn 1"
+											placeholder="VD: Đoạn 1, Đơn Ca, Song Ca..."
+											className="rounded-xl border-border/40 bg-background/50 focus:border-primary/40 focus:ring-2 focus:ring-primary/15 input-glow transition-all duration-200"
 										/>
 									</div>
 
-									<div className="space-y-3">
+									<div className="space-y-2">
 										{section.lines.map((line, lineIndex) => (
-											<div key={lineIndex} className="rounded-lg border border-border/60 p-3">
+											<div key={lineIndex} className="rounded-xl border border-border/20 bg-background/40 p-3 transition-colors hover:bg-muted/10">
 												<div className="mb-2 flex items-center justify-between">
-													<p className="text-xs font-medium text-muted-foreground">
+													<p className="text-[11px] font-medium text-muted-foreground">
 														Dòng {lineIndex + 1}
 													</p>
 													{section.lines.length > 1 && (
 														<Button
 															type="button"
-																variant="ghost"
-																size="icon-xs"
-																onClick={() => removeLine(sectionIndex, lineIndex)}
-																aria-label="Xóa dòng"
-															>
-																<Trash2 className="h-3.5 w-3.5" />
-															</Button>
+															variant="ghost"
+															size="icon-xs"
+															onClick={() => removeLine(sectionIndex, lineIndex)}
+															aria-label="Xóa dòng"
+															className="text-destructive hover:bg-destructive/10 transition-colors duration-200"
+														>
+															<Trash2 className="h-3 w-3" />
+														</Button>
 													)}
 												</div>
 												<div className="grid gap-2 sm:grid-cols-2">
@@ -711,7 +793,8 @@ export function SongForm({ mode, songId, onSaved }: SongFormProps) {
 														onChange={(event) =>
 															updateLine(sectionIndex, lineIndex, "notes", event.target.value)
 														}
-														placeholder="Nốt"
+														placeholder="Nốt nhạc"
+														className="rounded-lg border-border/40 bg-background/50 text-sm focus:border-primary/40 focus:ring-2 focus:ring-primary/15 input-glow transition-all duration-200"
 													/>
 													<Input
 														value={line.lyric}
@@ -719,6 +802,7 @@ export function SongForm({ mode, songId, onSaved }: SongFormProps) {
 															updateLine(sectionIndex, lineIndex, "lyric", event.target.value)
 														}
 														placeholder="Lời bài hát"
+														className="rounded-lg border-border/40 bg-background/50 text-sm focus:border-primary/40 focus:ring-2 focus:ring-primary/15 input-glow transition-all duration-200"
 													/>
 												</div>
 											</div>
@@ -726,12 +810,13 @@ export function SongForm({ mode, songId, onSaved }: SongFormProps) {
 
 										<Button
 											type="button"
-											variant="outline"
+											variant="ghost"
 											size="sm"
 											onClick={() => addLine(sectionIndex)}
+											className="gap-1.5 text-muted-foreground hover:text-foreground transition-colors duration-200"
 										>
-											<Plus className="h-4 w-4" />
-											Thêm dòng mới
+											<Plus className="h-3.5 w-3.5" />
+											Thêm dòng
 										</Button>
 									</div>
 								</CardContent>
@@ -739,14 +824,21 @@ export function SongForm({ mode, songId, onSaved }: SongFormProps) {
 						))}
 					</div>
 
-					<Button type="submit" disabled={submitting} className="gap-2">
-						<Save className="h-4 w-4" />
-						{submitting
-							? "Đang lưu..."
-							: isEditMode
-								? "Cập nhật bài hát"
-								: "Lưu bài hát mới"}
-					</Button>
+					{/* Submit */}
+					<div className="pt-2">
+						<Button
+							type="submit"
+							disabled={submitting}
+							className="gap-2 rounded-xl btn-primary-glow"
+						>
+							<Save className="h-4 w-4" />
+							{submitting
+								? "Đang lưu..."
+								: isEditMode
+									? "Cập nhật bài hát"
+									: "Lưu bài hát mới"}
+						</Button>
+					</div>
 				</form>
 			</CardContent>
 		</Card>

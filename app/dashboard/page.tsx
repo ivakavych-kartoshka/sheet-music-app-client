@@ -3,11 +3,16 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { ArrowLeft, LogOut, Pencil, Plus, Trash2 } from "lucide-react";
-import { deleteSong, getSongCategories, getSongs, type SongListItem } from "@/app/lib/api";
+import { LogOut, Pencil, Plus, Trash2, Search, Music2, Disc3 } from "lucide-react";
+import {
+  deleteSong,
+  getSongCategories,
+  getSongs,
+  type SongListItem,
+} from "@/app/lib/api";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import {
   Table,
@@ -25,8 +30,42 @@ import {
   PaginationNext,
   PaginationPrevious,
 } from "@/components/ui/pagination";
-import { AuthGuard } from "@/components/auth-guard";
+import { AdminGuard } from "@/components/admin-guard";
+import { Skeleton } from "@/components/ui/skeleton";
 import { useToast } from "@/hooks/use-toast";
+
+function LoadingSkeleton() {
+  return (
+    <div className="rounded-2xl border border-border/30 bg-card/50 glass card-glow overflow-hidden">
+      <div className="p-4 space-y-4">
+        {/* Table header skeleton */}
+        <div className="flex items-center gap-4 pb-3 border-b border-border/20">
+          <Skeleton className="h-3 w-20 rounded" />
+          <Skeleton className="h-3 w-16 rounded" />
+          <Skeleton className="h-3 w-16 rounded ml-auto" />
+        </div>
+        {/* Table rows */}
+        {Array.from({ length: 5 }).map((_, i) => (
+          <div
+            key={i}
+            className="flex items-center gap-4 py-3 animate-fade-in"
+            style={{ animationDelay: `${i * 80}ms` }}
+          >
+            <div className="flex items-center gap-2.5 flex-1">
+              <Skeleton className="h-8 w-8 rounded-lg shrink-0" />
+              <Skeleton className="h-4 rounded-lg" style={{ width: `${40 + (i % 3) * 15}%` }} />
+            </div>
+            <Skeleton className="h-5 w-16 rounded-lg shrink-0" />
+            <div className="flex gap-1.5 shrink-0">
+              <Skeleton className="h-8 w-16 rounded-lg" />
+              <Skeleton className="h-8 w-14 rounded-lg" />
+            </div>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
 
 export default function DashboardPage() {
   const router = useRouter();
@@ -34,10 +73,10 @@ export default function DashboardPage() {
   const [songs, setSongs] = useState<SongListItem[]>([]);
   const [loadingSongs, setLoadingSongs] = useState(true);
   const [deletingSongId, setDeletingSongId] = useState<string | null>(null);
-  const [categories, setCategories] = useState<string[]>(["Tất Cả"]);
+  const [categories, setCategories] = useState<string[]>(["Tất cả"]);
   const [keyword, setKeyword] = useState("");
   const [debouncedKeyword, setDebouncedKeyword] = useState("");
-  const [selectedCategory, setSelectedCategory] = useState("Tất Cả");
+  const [selectedCategory, setSelectedCategory] = useState("Tất cả");
   const [error, setError] = useState<string | null>(null);
   const [currentPage, setCurrentPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
@@ -58,7 +97,7 @@ export default function DashboardPage() {
 
       const response = await getSongs({
         search: debouncedKeyword || undefined,
-        category: selectedCategory === "Tất Cả" ? undefined : selectedCategory,
+        category: selectedCategory === "Tất cả" ? undefined : selectedCategory,
         page: currentPage,
         limit: 10,
       });
@@ -82,11 +121,11 @@ export default function DashboardPage() {
           return;
         }
 
-        setCategories(["Tất Cả", ...data]);
+        setCategories(["Tất cả", ...data]);
       })
       .catch(() => {
         if (mounted) {
-          setCategories(["Tất Cả"]);
+          setCategories(["Tất cả"]);
         }
       });
 
@@ -100,13 +139,14 @@ export default function DashboardPage() {
     void fetchSongs();
   }, [fetchSongs]);
 
-  // Reset to page 1 when search or category changes
   useEffect(() => {
     setCurrentPage(1);
   }, [debouncedKeyword, selectedCategory]);
 
   const handleDelete = async (id: string) => {
-    const shouldDelete = window.confirm("Bạn có chắc chắn muốn xóa bài hát này?");
+    const shouldDelete = window.confirm(
+      "Bạn có chắc chắn muốn xóa bài hát này?",
+    );
 
     if (!shouldDelete) {
       return;
@@ -124,17 +164,15 @@ export default function DashboardPage() {
   };
 
   const handleLogout = () => {
-    sessionStorage.removeItem("verified");
+    localStorage.removeItem("access_token");
     toast({
       title: "Thành công",
-      description: "Ðã thoát phiên làm việc.",
+      description: "Đã thoát phiên làm việc.",
     });
     setTimeout(() => {
       router.push("/verify-password");
     }, 1000);
   };
-
-  const totalSongsLabel = useMemo(() => `${totalSongs} bài nhạc`, [totalSongs]);
 
   const visiblePages = useMemo(() => {
     if (totalPages <= 7) {
@@ -163,110 +201,182 @@ export default function DashboardPage() {
   }, [currentPage, totalPages]);
 
   return (
-    <AuthGuard>
+    <AdminGuard>
       <main className="relative min-h-screen overflow-hidden bg-background text-foreground">
-        <section className="mx-auto w-full max-w-6xl px-4 pb-12 pt-8 sm:px-6 lg:px-8">
-        <div className="flex flex-wrap items-center justify-between gap-3">
-          <div className="flex items-center gap-2">
-            <p className="text-2xl font-semibold">
-              DANH SÁCH BÀI HÁT
-            </p>
-            <Badge variant="outline" className="rounded-xl px-3 py-1">
-              {totalSongsLabel}
-            </Badge>
-          </div>
-
-          <div className="flex items-center gap-2">
-            <Link href="/dashboard/new" className="inline-block">
-              <Button className="gap-2 rounded-xl">
-                <Plus className="h-4 w-4" />
-                Thêm bài nhạc mới
-              </Button>
-            </Link>
-            <Button 
-              variant="outline" 
-              onClick={handleLogout}
-              className="gap-2 rounded-xl"
-            >
-              <LogOut className="h-4 w-4" />
-              Logout
-            </Button>
-          </div>
+        <div className="pointer-events-none absolute inset-0">
+          <div className="absolute -left-32 -top-32 h-[32rem] w-[32rem] rounded-full bg-primary/5 blur-[120px] animate-float" />
+          <div className="absolute -right-24 top-1/3 h-[22rem] w-[22rem] rounded-full bg-chart-2/4 blur-[100px]" />
         </div>
 
-        <Card className="mt-5 rounded-2xl border-border/60 bg-card/80 shadow-sm">
-          <CardContent className="space-y-4">
-            <div className="grid gap-3 sm:grid-cols-2">
-              <Input
-                value={keyword}
-                onChange={(event) => setKeyword(event.target.value)}
-                placeholder="Tìm theo tên bài nhạc..."
-              />
-              <div className="flex flex-wrap gap-2">
-                {categories.map((category) => (
-                  <Button
-                    key={category}
-                    type="button"
-                    size="sm"
-                    variant={selectedCategory === category ? "secondary" : "outline"}
-                    onClick={() => setSelectedCategory(category)}
-                  >
-                    {category}
-                  </Button>
-                ))}
+        <section className="relative mx-auto w-full max-w-6xl px-4 pb-12 pt-8 sm:px-6 lg:px-8">
+          {/* Header */}
+          <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between animate-fade-in">
+            <div className="flex items-center gap-3">
+              <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-primary/10 border border-primary/15">
+                <Disc3 className="h-5 w-5 text-primary" />
+              </div>
+              <div>
+                <h1 className="text-xl font-bold tracking-tight sm:text-2xl">
+                  Quản lý bài hát
+                </h1>
+                <p className="text-xs text-muted-foreground sm:text-sm">
+                  {totalSongs} bài nhạc trong thư viện
+                </p>
               </div>
             </div>
 
-            {error && <p className="text-sm font-medium text-destructive">{error}</p>}
+            <div className="flex items-center gap-2">
+              <Link href="/dashboard/new" className="inline-block">
+                <Button className="gap-2 rounded-xl btn-primary-glow">
+                  <Plus className="h-4 w-4" />
+                  Thêm mới
+                </Button>
+              </Link>
+              <Button
+                variant="outline"
+                onClick={handleLogout}
+                className="gap-2 rounded-xl border-border/40 hover:bg-destructive/5 hover:text-destructive hover:border-destructive/20 transition-all duration-200"
+              >
+                <LogOut className="h-4 w-4" />
+                Đăng xuất
+              </Button>
+            </div>
+          </div>
 
-            {loadingSongs ? (
-              <p className="text-sm text-muted-foreground">Đang tải danh sách...</p>
-            ) : songs.length === 0 ? (
-              <p className="text-sm text-muted-foreground">Chưa có bài nhạc nào.</p>
-            ) : (
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>TIÊU ĐỀ</TableHead>
-                    <TableHead>THỂ LOẠI</TableHead>
-                    <TableHead className="text-right">HÀNH ĐỘNG</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {songs.map((song) => (
-                    <TableRow key={song._id}>
-                      <TableCell className="font-medium">{song.title}</TableCell>
-                      <TableCell>{song.category?.trim() || "Uncategorized"}</TableCell>
-                      <TableCell className="text-right">
-                        <div className="flex justify-end gap-2">
-                          <Link href={`/dashboard/${song._id}`}>
-                            <Button type="button" variant="outline" size="sm" className="gap-1">
-                              <Pencil className="h-3.5 w-3.5" />
-                              Edit
-                            </Button>
-                          </Link>
-                          <Button
-                            type="button"
-                            variant="destructive"
-                            size="sm"
-                            className="gap-1"
-                            onClick={() => void handleDelete(song._id)}
-                            disabled={deletingSongId === song._id}
-                          >
-                            <Trash2 className="h-3.5 w-3.5" />
-                            {deletingSongId === song._id ? "Đang xóa..." : "Xóa"}
-                          </Button>
-                        </div>
-                      </TableCell>
-                    </TableRow>
+          {/* Search & Filter */}
+          <Card className="mt-6 rounded-2xl border-border/30 bg-card/50 shadow-sm glass card-glow">
+            <CardContent className="p-4 sm:p-5">
+              <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
+                <div className="relative flex-1">
+                  <Search className="pointer-events-none absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+                  <Input
+                    value={keyword}
+                    onChange={(event) => setKeyword(event.target.value)}
+                    placeholder="Tìm theo tên bài nhạc..."
+                    className="h-10 pl-10 rounded-xl border-border/40 bg-background/50 focus:border-primary/40 focus:ring-2 focus:ring-primary/15 input-glow transition-all duration-200"
+                  />
+                </div>
+                <div className="flex flex-wrap gap-1.5">
+                  {categories.map((category) => (
+                    <Button
+                      key={category}
+                      type="button"
+                      size="sm"
+                      variant={
+                        selectedCategory === category ? "default" : "outline"
+                      }
+                      onClick={() => setSelectedCategory(category)}
+                      className={`rounded-lg text-xs transition-all duration-200 ${
+                        selectedCategory === category
+                          ? "shadow-sm shadow-primary/15 btn-primary-glow"
+                          : "border-border/40 hover:border-primary/20"
+                      }`}
+                    >
+                      {category}
+                    </Button>
                   ))}
-                </TableBody>
-              </Table>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* Error */}
+          {error && (
+            <div className="mt-4 rounded-xl border border-destructive/15 bg-destructive/5 p-3 animate-fade-in">
+              <p className="text-sm font-medium text-destructive">{error}</p>
+            </div>
+          )}
+
+          {/* Content */}
+          <div className="mt-4">
+            {loadingSongs ? (
+              <LoadingSkeleton />
+            ) : songs.length === 0 ? (
+              <div className="rounded-2xl border border-dashed border-border/50 bg-card/20 p-12 text-center animate-fade-in">
+                <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-2xl bg-muted/40 mb-4">
+                  <Music2 className="h-7 w-7 text-muted-foreground/50" />
+                </div>
+                <p className="text-base font-medium">Chưa có bài nhạc nào</p>
+                <p className="text-sm text-muted-foreground mt-1">
+                  Bắt đầu bằng cách thêm bài hát mới
+                </p>
+              </div>
+            ) : (
+              <div className="rounded-2xl border border-border/30 bg-card/50 shadow-sm overflow-hidden glass card-glow">
+                <Table>
+                  <TableHeader>
+                    <TableRow className="border-border/30 hover:bg-transparent">
+                      <TableHead className="font-semibold text-xs uppercase tracking-wider text-muted-foreground">
+                        Tiêu đề
+                      </TableHead>
+                      <TableHead className="font-semibold text-xs uppercase tracking-wider text-muted-foreground">
+                        Thể loại
+                      </TableHead>
+                      <TableHead className="text-right font-semibold text-xs uppercase tracking-wider text-muted-foreground">
+                        Hành động
+                      </TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {songs.map((song) => (
+                      <TableRow
+                        key={song._id}
+                        className="border-border/20 transition-colors hover:bg-muted/20"
+                      >
+                        <TableCell className="font-medium py-3.5">
+                          <div className="flex items-center gap-2.5">
+                            <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-primary/8 text-primary">
+                              <Music2 className="h-3.5 w-3.5" />
+                            </div>
+                            <span className="line-clamp-1">{song.title}</span>
+                          </div>
+                        </TableCell>
+                        <TableCell>
+                          <Badge
+                            variant="secondary"
+                            className="rounded-lg text-[11px] font-medium bg-primary/8 text-primary border-primary/8"
+                          >
+                            {song.category?.trim() || "Chưa phân loại"}
+                          </Badge>
+                        </TableCell>
+                        <TableCell className="text-right">
+                          <div className="flex justify-end gap-1.5">
+                            <Link href={`/dashboard/${song._id}`}>
+                              <Button
+                                type="button"
+                                variant="ghost"
+                                size="sm"
+                                className="gap-1.5 rounded-lg h-8 px-3 text-muted-foreground hover:text-foreground transition-colors duration-200"
+                              >
+                                <Pencil className="h-3.5 w-3.5" />
+                                Sửa
+                              </Button>
+                            </Link>
+                            <Button
+                              type="button"
+                              variant="ghost"
+                              size="sm"
+                              className="gap-1.5 rounded-lg h-8 px-3 text-destructive hover:bg-destructive/10 hover:text-destructive transition-colors duration-200"
+                              onClick={() => void handleDelete(song._id)}
+                              disabled={deletingSongId === song._id}
+                            >
+                              <Trash2 className="h-3.5 w-3.5" />
+                              {deletingSongId === song._id
+                                ? "..."
+                                : "Xóa"}
+                            </Button>
+                          </div>
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              </div>
             )}
 
             {/* Pagination */}
             {!loadingSongs && songs.length > 0 && totalPages > 1 && (
-              <div className="mt-6">
+              <div className="mt-6 flex justify-center">
                 <Pagination>
                   <PaginationContent>
                     <PaginationItem>
@@ -279,7 +389,11 @@ export default function DashboardPage() {
                             setCurrentPage(currentPage - 1);
                           }
                         }}
-                        className={currentPage === 1 ? "pointer-events-none opacity-50" : ""}
+                        className={
+                          currentPage === 1
+                            ? "pointer-events-none opacity-50"
+                            : ""
+                        }
                       />
                     </PaginationItem>
 
@@ -320,17 +434,20 @@ export default function DashboardPage() {
                             setCurrentPage(currentPage + 1);
                           }
                         }}
-                        className={currentPage === totalPages ? "pointer-events-none opacity-50" : ""}
+                        className={
+                          currentPage === totalPages
+                            ? "pointer-events-none opacity-50"
+                            : ""
+                        }
                       />
                     </PaginationItem>
                   </PaginationContent>
                 </Pagination>
               </div>
             )}
-          </CardContent>
-        </Card>
-      </section>
-    </main>
-    </AuthGuard>
+          </div>
+        </section>
+      </main>
+    </AdminGuard>
   );
 }
