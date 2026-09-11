@@ -10,9 +10,6 @@ import { Input } from "@/components/ui/input";
 import { useToast } from "@/hooks/use-toast";
 import { Eye, EyeOff, Key, User, Disc3, ArrowRight, ArrowLeft } from "lucide-react";
 
-const API_URL =
-  process.env.NEXT_PUBLIC_API_URL || "http://localhost:3000";
-
 function GoogleIcon() {
   return (
     <svg className="h-4 w-4" viewBox="0 0 24 24" aria-hidden="true">
@@ -48,7 +45,7 @@ function VerifyPasswordContent() {
 
   const handleGoogleLogin = () => {
     setGoogleLoading(true);
-    window.location.href = `${API_URL}/auth/google`;
+    window.location.href = "/api/auth/google";
   };
 
   useEffect(() => {
