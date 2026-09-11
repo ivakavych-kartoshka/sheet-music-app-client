@@ -216,7 +216,8 @@ export default function Home() {
                   <span className="text-foreground">FTC</span>
                 </h1>
                 <p className="mt-3 text-muted-foreground text-sm sm:text-base leading-relaxed">
-                  Kho nhạc của clb FTC — tìm kiếm, nghe và luyện tập mọi lúc mọi nơi
+                  Kho nhạc của clb FTC — tìm kiếm, nghe và luyện tập mọi lúc mọi
+                  nơi
                 </p>
               </div>
             </div>
@@ -342,7 +343,9 @@ export default function Home() {
                         }
                       }}
                       className={
-                        currentPage === 1 ? "pointer-events-none opacity-50" : ""
+                        currentPage === 1
+                          ? "pointer-events-none opacity-50"
+                          : ""
                       }
                     />
                   </PaginationItem>
@@ -416,10 +419,7 @@ export default function Home() {
               size="sm"
               className="gap-2 rounded-xl text-muted-foreground hover:text-foreground"
               onClick={handleBackToTop}
-            >
-              <ArrowUp className="h-4 w-4" />
-              Lên đầu trang
-            </Button>
+            ></Button>
           </div>
         </div>
       </footer>
