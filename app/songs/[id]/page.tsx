@@ -28,6 +28,9 @@ async function getSong(slug: string): Promise<SongDetailData> {
 
   const response = await fetch(`${backendUrl}/songs/slug/${slug}`, {
     cache: "no-store",
+    headers: {
+      "x-api-key": process.env.API_KEY || "",
+    },
   });
 
   if (!response.ok) {
